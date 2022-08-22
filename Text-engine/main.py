@@ -48,7 +48,7 @@ class Item:
 
 
 class Player:
-    def __init__(self, name, gender):
+    def __init__(self, name, gender, race):
         if name == "":
             self.name = os.getlogin()
         else:
@@ -68,12 +68,16 @@ class Player:
         self.health = 100
         self.stamina = 100
 
+        self.race = race
+
         self.inventory = []
 
 
     def stats(self):
+        print(colored(f"Уровень: {self.lvl}", self.textColor))
         print(colored(f"Имя: {self.name}", self.textColor))
         print(colored(f"Пол: {self.displayGender}", self.textColor))
+        print(colored(f"Расса: {self.race}", self.textColor))
         print(f"Здоровье: {self.health}")
 
     def showInv(self):
@@ -89,15 +93,23 @@ class Player:
         print(colored(f'{self.name}: {text}', self.textColor))
 
     def addToInv(self, item):
+        header(f"К вам добавилось {item.name} {item.count} шт.")
         return self.inventory.append(item)
 
     def plusToInv(self, item):
+        header(f"Вы получили {item.name} {item.count} шт.")
         for i in self.inventory:
             if i.name == item.name:
                 i.count += item.count
-                break
+                return i
+        return self.addToInv(item)
 
+    def clearInv(self):
+        self.inventory = []
+        return self.inventory
+    
     def minusFromInv(self, item):
+        header(f"С вас отняли {item.name} {item.count} шт.")
         for i in self.inventory:
             if i.name == item.name:
                 i.count -= item.count
@@ -113,8 +125,34 @@ class Player:
     def heal(self, amount):
         return self.health + amount
 
-femPlayer = Player("", "f")
-malePlayer = Player("", "m")
+class NPC:
+    def __init__(self, name, race, gender, type):
+        self.name = name
+        self.race = race
+        self.gender = gender
+        self.type = type
+        self.lvl = 1
+        self.health = 100
+        self.stamina = 100
+
+        if self.gender == "f":
+            self.textColor = "red"
+            self.displayGender = "Женский"
+        else:
+            self.textColor = "green"
+            self.displayGender = "Мужской"
+
+    def stats(self):
+        print(colored(f"Уровень: {self.lvl}", self.textColor))
+        print(colored(f"Имя: {self.name}", self.textColor))
+        print(colored(f"Пол: {self.displayGender}", self.textColor))
+        print(colored(f"Расса: {self.race}", self.textColor))
+        print(colored(f"Класс: {self.type}", self.textColor))
+        print(f"Здоровье: {self.health}")
+        
+
+femPlayer = Player("", "f", "человек")
+malePlayer = Player("", "m", "пони")
 testItem = Item("Knive", 1, "None")
 
 clear()
