@@ -54,7 +54,10 @@ class Player:
             self.name = os.getlogin()
         else:
             self.name = name
-        
+
+        self.maxHealth = 100
+        self.married = False
+
         # For better text
         if gender == "female" or gender == "Female" or gender == 'f' or gender == 'F':
             self.textColor = "magenta"
@@ -64,7 +67,7 @@ class Player:
             self.textColor = "green"
             self.gender = "m"
             self.displayGender = "Мужской"
-        
+
         # Have own start value
         self.strength = 10
         self.lvl = 1
@@ -129,16 +132,21 @@ class Player:
         return self.health + amount
 
 class NPC:
-    def __init__(self, name, race, gender, type):
+    def __init__(self, name, race, gender, type, gay, married = [False, ""]):
         self.name = name
         self.race = race
         self.gender = gender
         self.type = type
+        self.gay = gay
+
         self.lvl = 1
         self.health = 100
         self.stamina = 100
 
+        self.married = married
+
         self.inventory = []
+        self.relationList = []
 
         if self.gender == "f":
             self.textColor = "magenta"
@@ -147,20 +155,31 @@ class NPC:
             self.textColor = "green"
             self.displayGender = "Мужской"
 
-    def stats(self):
+    def addRelationship(self, target, relType):
+        self.relationList.append([target.name, target.gender, relType])
+
+    def stats(self, player):
         if self.health > 0:
             print(colored(f"Уровень: {self.lvl}", self.textColor))
+            print(f"Здоровье: {self.health}")
             print(colored(f"Имя: {self.name}", self.textColor))
             print(colored(f"Пол: {self.displayGender}", self.textColor))
             print(colored(f"Расса: {self.race}", self.textColor))
             print(colored(f"Класс: {self.type}", self.textColor))
-            print(f"Здоровье: {self.health}")
+            if self.married[0] == True:
+                print(f"Замужем с {self.married[1]}.")
+            else:
+                print("Нет пары.")
+            for i in self.relationList:
+                if i[0] == player.name and i[1] == player.gender:
+                    return print(f"Вы для {self.name} как {i[2]}.")
+            return print(f"Вы для {self.name} по сути ни кто.")
         else:
             if self.gender == "m":
-                warning(f"{self.name} Мёртв.")
+                return warning(f"{self.name} Мёртв.")
             else:
-                warning(f"{self.name} Мертва.")
-        
+                return warning(f"{self.name} Мертва.")
+
     def say(self, text):
         print(colored(f'{self.name}: {text}', self.textColor))
 
@@ -210,20 +229,45 @@ class NPC:
                     break
 
 class Monster:
-    def __init__(self, race, gender, place):
+    def __init__(self, race, gender, dmgPoint, maxHealth, place):
         self.race = race
         self.gender = gender
         self.place = place
+        self.dmgPoint = dmgPoint
+        self.maxHealth = maxHealth
+
+        self.defeat = False
+        self.health = 100
+
+    def takeDMG(self, amount):
+        self.health -= amount
+        return self.checkHealth()
+
+    def doDMG(self, target):
+        warning(f"{self.race} атакует {target.name}!")
+        target.health -= self.dmgPoint
+
+    def death(self):
+        self.defeat = True
+
+    def checkHealth(self):
+        if self.health < 0:
+            self.health = 0
+            return self.death()
+        elif self.health > self.maxHealth:
+            self.health = self.maxHealth
+            return self.health
 
     def say(self, text):
         print(colored(f"{self.race}: {text}", 'red'))
 
 
-femPlayer = Player("", "f", "человек")
-malePlayer = Player("", "m", "пони")
-femNPC = NPC("Джулия", "робот", 'f', 'житель')
+femPlayer = Player("Female", "f", "человек")
+malePlayer = Player("Male", "m", "пони")
+femNPC = NPC("Джулия", "робот", 'f', 'житель', True)
+femNPC2 = NPC("Джулия2", "робот", 'f', 'житель', False)
 testItem = Item("Knive", 1, "None")
-testMon = Monster("arachnoide", 'f', "None")
+testMon = Monster("arachnoide", 'f', 10, 100, "None")
 
 clear()
 testMon.say('hi')
@@ -260,7 +304,10 @@ malePlayer.clearInv()
 input()
 clear()
 
-femNPC.stats()
+femNPC.addRelationship(malePlayer, 'друг')
+femNPC2.addRelationship(malePlayer, 'друг')
+femNPC.stats(femPlayer)
+femNPC.stats(malePlayer)
 input()
 femNPC.showInv()
 input()
@@ -270,7 +317,6 @@ input()
 femNPC.plusToInv(testItem)
 femNPC.plusToInv(testItem, False)
 femNPC.showInv()
-
 input()
 clear()
 success("Debug done")
