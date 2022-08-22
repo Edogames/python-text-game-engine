@@ -49,13 +49,15 @@ class Item:
 
 class Player:
     def __init__(self, name, gender, race):
+        # Get a name for character
         if name == "":
             self.name = os.getlogin()
         else:
             self.name = name
         
+        # For better text
         if gender == "female" or gender == "Female" or gender == 'f' or gender == 'F':
-            self.textColor = "red"
+            self.textColor = "magenta"
             self.gender = "f"
             self.displayGender = "Женский"
         elif gender == "male" or gender == "Male" or gender == 'm' or gender == 'M':
@@ -63,6 +65,7 @@ class Player:
             self.gender = "m"
             self.displayGender = "Мужской"
         
+        # Have own start value
         self.strength = 10
         self.lvl = 1
         self.health = 100
@@ -71,7 +74,6 @@ class Player:
         self.race = race
 
         self.inventory = []
-
 
     def stats(self):
         print(colored(f"Уровень: {self.lvl}", self.textColor))
@@ -139,7 +141,7 @@ class NPC:
         self.inventory = []
 
         if self.gender == "f":
-            self.textColor = "red"
+            self.textColor = "magenta"
             self.displayGender = "Женский"
         else:
             self.textColor = "green"
@@ -207,12 +209,25 @@ class NPC:
                 else:
                     break
 
+class Monster:
+    def __init__(self, race, gender, place):
+        self.race = race
+        self.gender = gender
+        self.place = place
+
+    def say(self, text):
+        print(colored(f"{self.race}: {text}", 'red'))
+
 
 femPlayer = Player("", "f", "человек")
 malePlayer = Player("", "m", "пони")
 femNPC = NPC("Джулия", "робот", 'f', 'житель')
 testItem = Item("Knive", 1, "None")
+testMon = Monster("arachnoide", 'f', "None")
 
+clear()
+testMon.say('hi')
+input()
 clear()
 femPlayer.stats()
 femPlayer.showInv()
