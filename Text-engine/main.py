@@ -1,7 +1,9 @@
+# Важные компоненты
 from termcolor import colored
 import os
 import random
 
+# Типы уведомлений
 def warning(text):
     return print(f"{colored(text, 'red')}")
 def header(text):
@@ -9,11 +11,13 @@ def header(text):
 def success(text):
     return print(colored(f'Успех! {text}!', "green"))
 
+# Очистка консоли
 def clear():
     return os.system('cls' if os.name=='nt' else 'clear')
 
+# Локации
 class Location:
-    def __init__(self, name, displayName, monsterChance, lootChance, description):
+    def __init__(self, name, displayName, monsterChance, lootChance, description = ""):
         self.name = name
         self.displayName = displayName
         self.monsterChance = monsterChance
@@ -22,7 +26,10 @@ class Location:
 
     def stats(self):
         print(f"Имя местности: {self.displayName}")
-        print(f"Описание местности: {self.displayName}")
+        if self.description != "":
+            print(f"Описание местности: {self.description}")
+        else:
+            print(f"Неизвестно.")
         if self.monsterChance >= 5:
             monColor = "red"
         else:
@@ -35,6 +42,7 @@ class Location:
         print(colored(f"Шанс нападение монстров: {self.monsterChance}", monColor))
         print(colored(f"Шанс выпадение предметов: {self.monsterChance}", lootColor))
 
+# Предмет
 class Item:
     def __init__(self, name, count, use, description = ""):
         self.name = name
@@ -45,8 +53,27 @@ class Item:
     def stats(self):
         print(f"{colored('|Имя', 'cyan')} -> {colored(self.name, 'cyan')}")
         print(f"{colored('|Количество', 'cyan')} -> {colored(self.count, 'cyan')}")
+        return print(f"{colored('|__________________', 'cyan')}")
 
+# Лечилка
+class Heal:
+    def __init__(self, name, dispName, heal, count, description):
+        self.name = name
+        self.dispName = dispName
+        self.heal = heal
+        self.count = count
+        self.description = description
 
+    def use(self, target):
+        return target.health + self.heal
+
+    def stats(self):
+        print(f"{colored('|Имя', 'cyan')}: {self.dispName}")
+        print(f"{colored('|Описание', 'cyan')}: {self.description}")
+        print(f"{colored('|Количество', 'cyan')}: {self.count}")
+        return print(f"{colored('|__________________', 'cyan')}")
+
+# Игрок
 class Player:
     def __init__(self, name, gender, race):
         # Get a name for character
@@ -90,23 +117,42 @@ class Player:
             header("Инвентарь")
             for i in self.inventory:
                 i.stats()
-                print(f"{colored('|__________________', 'cyan')}")
         else:
             self.say("У меня ничего нет...")
+
+    def healList(self):
+        newList = []
+        title = ""
+        num = 0
+        data = []
+        for i in self.inventory:
+            if type(i) == Heal:
+                num += 1
+                newList.append(i)
+                title += f"{colored(num, 'cyan')} - {i.dispName}"
+        data.append(newList)
+        return self.choose(data)
+    
+    def choose(self, data):
+        self.say("Что же мне выбрать?")
+        data[1]
 
     def say(self, text):
         print(colored(f'{self.name}: {text}', self.textColor))
 
     def addToInv(self, item):
+        for i in self.inventory:
+            if i.name == item.name:
+                return self.plusToInv(i)
         header(f"К вам добавилось {item.name} {item.count} шт.")
         return self.inventory.append(item)
 
     def plusToInv(self, item):
-        header(f"Вы получили {item.name} {item.count} шт.")
         for i in self.inventory:
             if i.name == item.name:
                 i.count += item.count
                 return i
+        header(f"Вы получили {item.name} {item.count} шт.")
         return self.addToInv(item)
 
     def clearInv(self):
@@ -131,6 +177,7 @@ class Player:
     def heal(self, amount):
         return self.health + amount
 
+# Не игровой персонаж
 class NPC:
     def __init__(self, name, race, gender, type, gay, married = [False, ""]):
         self.name = name
@@ -188,11 +235,13 @@ class NPC:
             header("Инвентарь")
             for i in self.inventory:
                 i.stats()
-                print(f"{colored('|__________________', 'cyan')}")
         else:
             self.say("У меня ничего нет...")
 
     def addToInv(self, item, alert = True):
+        for i in self.inventory:
+            if i.name == item.name:
+                return self.plusToInv(i, alert)
         if alert == True:
             header(f"К '{self.name}' добавилось {item.name} {item.count} шт.")
         return self.inventory.append(item)
@@ -228,6 +277,7 @@ class NPC:
                 else:
                     break
 
+# Враг/монстр
 class Monster:
     def __init__(self, race, gender, dmgPoint, maxHealth, place):
         self.race = race
@@ -261,12 +311,15 @@ class Monster:
     def say(self, text):
         print(colored(f"{self.race}: {text}", 'red'))
 
-
+# Тесты
 femPlayer = Player("Female", "f", "человек")
 malePlayer = Player("Male", "m", "пони")
 femNPC = NPC("Джулия", "робот", 'f', 'житель', True)
 femNPC2 = NPC("Джулия2", "робот", 'f', 'житель', False)
+
 testItem = Item("Knive", 1, "None")
+testHeal = Heal("BHeal", "Большая аптечка", 10, 1, "Лечит лучше.")
+
 testMon = Monster("arachnoide", 'f', 10, 100, "None")
 
 clear()
@@ -278,11 +331,13 @@ femPlayer.showInv()
 input()
 clear()
 femPlayer.addToInv(testItem)
+femPlayer.addToInv(testHeal)
 femPlayer.showInv()
 input()
 clear()
 for _ in range(10):
     femPlayer.addToInv(testItem)
+    femPlayer.addToInv(testHeal)
 femPlayer.showInv()
 input()
 femPlayer.clearInv()
@@ -293,17 +348,26 @@ malePlayer.showInv()
 input()
 clear()
 malePlayer.addToInv(testItem)
+malePlayer.addToInv(testHeal)
 malePlayer.showInv()
 input()
 clear()
 for _ in range(10):
     malePlayer.addToInv(testItem)
+    malePlayer.addToInv(testHeal)
 malePlayer.showInv()
 input()
 malePlayer.clearInv()
 input()
 clear()
-
+testMon.doDMG(malePlayer)
+input()
+testMon.doDMG(femPlayer)
+input()
+femPlayer.stats()
+input()
+malePlayer.stats()
+input()
 femNPC.addRelationship(malePlayer, 'друг')
 femNPC2.addRelationship(malePlayer, 'друг')
 femNPC.stats(femPlayer)
