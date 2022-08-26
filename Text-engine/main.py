@@ -1,5 +1,5 @@
 # Важные компоненты
-from termcolor import colored
+from termcolor import colored, cprint
 import os
 import random
 
@@ -14,6 +14,19 @@ def success(text):
 # Очистка консоли
 def clear():
     return os.system('cls' if os.name=='nt' else 'clear')
+
+class Choices:
+    def __init__(self, choices = []):
+        self.choices = choices
+
+    def displayChoices(self):
+        num = 0
+        text = ""
+        for i in self.choices:
+            num += 1
+            text += f"{colored(f'{num} -', 'cyan')} {i} "
+
+        return text
 
 # Локации
 class Location:
@@ -39,8 +52,60 @@ class Location:
             lootColor = "green"
         else:
             lootColor = "red"
-        print(colored(f"Шанс нападение монстров: {self.monsterChance}", monColor))
-        print(colored(f"Шанс выпадение предметов: {self.monsterChance}", lootColor))
+        cprint(f"Шанс нападение монстров: {self.monsterChance}", monColor)
+        cprint(f"Шанс выпадение предметов: {self.monsterChance}", lootColor)
+
+    def goto(self, name, locations):
+        return goto(name, locations)
+
+    def getLocs(self, locations):
+        availableLocs = []
+
+        for i in locations:
+            if i.name != self.name:
+                availableLocs.append(i)
+        
+        return availableLocs
+
+    def getLoc(self, num):
+        initLocs = self.getLocs()
+        return initLocs[num - 1].name
+
+    def showMap(self, locations):
+        locs = self.getLocs(locations)
+        text = ""
+        num = 0
+
+        for i in locs:
+            num += 1
+            text += f"{num} - {i.displayName}"
+    
+    def start(self, locs, player, choice = 0):
+        if choice == 0:
+            header(f"Вы находитесь в {self.displayName}")
+            selection = Choices([
+                "Идти",
+                "О местности",
+            ])
+
+            print(selection.displayChoices())
+            choice = int(input())
+
+        if choice == 1:
+            clear()
+            player.say("Куда же мне идти?")
+            availLocs = self.getLocs(locs)
+            print(self.showMap(availLocs))
+            num = input()
+            
+            if num == '0' or num == "":
+                return self.start(locs, player, 1)
+            newLoc = availLocs[int(num)].name
+            return goto(newLoc, locs)
+        elif choice == 2:
+            clear()
+            self.stats()
+            return self.start(locs)
 
 # Предмет
 class Item:
@@ -84,6 +149,7 @@ class Player:
 
         self.maxHealth = 100
         self.married = False
+        self.armor = False
 
         # For better text
         if gender == "female" or gender == "Female" or gender == 'f' or gender == 'F':
@@ -106,11 +172,11 @@ class Player:
         self.inventory = []
 
     def stats(self):
-        print(colored(f"Уровень: {self.lvl}", self.textColor))
-        print(colored(f"Имя: {self.name}", self.textColor))
-        print(colored(f"Пол: {self.displayGender}", self.textColor))
-        print(colored(f"Расса: {self.race}", self.textColor))
-        print(f"Здоровье: {self.health}")
+        cprint(f"Уровень: {self.lvl}", self.textColor)
+        cprint(f"Имя: {self.name}", self.textColor)
+        cprint(f"Пол: {self.displayGender}", self.textColor)
+        cprint(f"Расса: {self.race}", self.textColor)
+        cprint(f"Здоровье: {self.health}")
 
     def showInv(self):
         if len(self.inventory) > 0:
@@ -138,7 +204,7 @@ class Player:
         data[1]
 
     def say(self, text):
-        print(colored(f'{self.name}: {text}', self.textColor))
+        cprint(f'{self.name}: {text}', self.textColor)
 
     def addToInv(self, item):
         for i in self.inventory:
@@ -207,12 +273,12 @@ class NPC:
 
     def stats(self, player):
         if self.health > 0:
-            print(colored(f"Уровень: {self.lvl}", self.textColor))
-            print(f"Здоровье: {self.health}")
-            print(colored(f"Имя: {self.name}", self.textColor))
-            print(colored(f"Пол: {self.displayGender}", self.textColor))
-            print(colored(f"Расса: {self.race}", self.textColor))
-            print(colored(f"Класс: {self.type}", self.textColor))
+            cprint(f"Уровень: {self.lvl}", self.textColor)
+            cprint(f"Здоровье: {self.health}")
+            cprint(f"Имя: {self.name}", self.textColor)
+            cprint(f"Пол: {self.displayGender}", self.textColor)
+            cprint(f"Расса: {self.race}", self.textColor)
+            cprint(f"Класс: {self.type}", self.textColor)
             if self.married[0] == True:
                 print(f"Замужем с {self.married[1]}.")
             else:
@@ -228,7 +294,7 @@ class NPC:
                 return warning(f"{self.name} Мертва.")
 
     def say(self, text):
-        print(colored(f'{self.name}: {text}', self.textColor))
+        cprint(f'{self.name}: {text}', self.textColor)
 
     def showInv(self):
         if len(self.inventory) > 0:
@@ -309,80 +375,24 @@ class Monster:
             return self.health
 
     def say(self, text):
-        print(colored(f"{self.race}: {text}", 'red'))
+        cprint(f"{self.race}: {text}", 'red')
 
-# Тесты
-femPlayer = Player("Female", "f", "человек")
-malePlayer = Player("Male", "m", "пони")
-femNPC = NPC("Джулия", "робот", 'f', 'житель', True)
-femNPC2 = NPC("Джулия2", "робот", 'f', 'житель', False)
+player = Player("Вася", "m", "человек")
 
-testItem = Item("Knive", 1, "None")
-testHeal = Heal("BHeal", "Большая аптечка", 10, 1, "Лечит лучше.")
+locs= [
+    Location("Plane", "Ровнина", 20, 10, "Просто ровнина."),
+    Location("NotAPlane", "Не ровнина", 20, 10, "Это не ровнина."),
+]
 
-testMon = Monster("arachnoide", 'f', 10, 100, "None")
+
+def goto(locName, locations = []):
+    if locations == []:
+        locations = locs
+
+    for i in locations:
+        if i.name == locName:
+            newLoc = i
+            return newLoc.start(locations, player)
 
 clear()
-testMon.say('hi')
-input()
-clear()
-femPlayer.stats()
-femPlayer.showInv()
-input()
-clear()
-femPlayer.addToInv(testItem)
-femPlayer.addToInv(testHeal)
-femPlayer.showInv()
-input()
-clear()
-for _ in range(10):
-    femPlayer.addToInv(testItem)
-    femPlayer.addToInv(testHeal)
-femPlayer.showInv()
-input()
-femPlayer.clearInv()
-input()
-clear()
-malePlayer.stats()
-malePlayer.showInv()
-input()
-clear()
-malePlayer.addToInv(testItem)
-malePlayer.addToInv(testHeal)
-malePlayer.showInv()
-input()
-clear()
-for _ in range(10):
-    malePlayer.addToInv(testItem)
-    malePlayer.addToInv(testHeal)
-malePlayer.showInv()
-input()
-malePlayer.clearInv()
-input()
-clear()
-testMon.doDMG(malePlayer)
-input()
-testMon.doDMG(femPlayer)
-input()
-femPlayer.stats()
-input()
-malePlayer.stats()
-input()
-femNPC.addRelationship(malePlayer, 'друг')
-femNPC2.addRelationship(malePlayer, 'друг')
-femNPC.stats(femPlayer)
-femNPC.stats(malePlayer)
-input()
-femNPC.showInv()
-input()
-femNPC.addToInv(testItem)
-femNPC.showInv()
-input()
-femNPC.plusToInv(testItem)
-femNPC.plusToInv(testItem, False)
-femNPC.showInv()
-input()
-clear()
-success("Debug done")
-input()
-clear()
+goto("Plane", locs)
