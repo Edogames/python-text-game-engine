@@ -1,5 +1,7 @@
 # Важные компоненты
 from termcolor import colored, cprint
+from playsound import playsound
+import time
 import os
 import random
 
@@ -28,14 +30,42 @@ class Choices:
 
         return text
 
+# Меню
+class MainMenu:
+    def __init__(self, cheats = False):
+        self.cheats = cheats
+
+    def mainMenuScreen(self):
+        print(f"{colored('1 -', 'cyan')} Играть, {colored('2 -')} Настройки")
+
+        choice = int(input("Ваш выбор: "))
+
+        if choice == 1:
+            return start()
+        else:
+            return getattr(self, 'options')
+
+    def options(self):
+        if self.cheats == False:
+            cprint("Читы отключены.", "cyan")
+        else:
+            cprint("Читы включены.", "cyan")
+
+        input("Нажмите Enter что бы вернуться...")
+        return self.mainMenuScreen()
+
 # Локации
 class Location:
-    def __init__(self, name, displayName, monsterChance, lootChance, description = ""):
+    def __init__(self, name, displayName, monsterChance, lootChance, available = True, description = ""):
         self.name = name
         self.displayName = displayName
         self.monsterChance = monsterChance
         self.lootChance = lootChance
         self.description = description
+
+        self.available = available
+
+        self.tpSound = 'Sounds/Player/Teleport.wav'
 
     def stats(self):
         print(f"Имя местности: {self.displayName}")
@@ -56,6 +86,8 @@ class Location:
         cprint(f"Шанс выпадение предметов: {self.monsterChance}", lootColor)
 
     def goto(self, name, locations):
+        header("Ждите...")
+        time.sleep(0.5)
         return goto(name, locations)
 
     def getLocs(self, locations):
@@ -71,18 +103,24 @@ class Location:
         initLocs = self.getLocs()
         return initLocs[num - 1].name
 
+    def playSFX(self, value):
+        return playsound(value)
+
     def showMap(self, locations):
-        locs = self.getLocs(locations)
         text = ""
         num = 0
 
-        for i in locs:
+        for i in locations:
             num += 1
             text += f"{num} - {i.displayName}"
     
     def start(self, locs, player, choice = 0):
+        clear()
         if choice == 0:
             header(f"Вы находитесь в {self.displayName}")
+
+            self.playSFX(self.tpSound)
+
             selection = Choices([
                 "Идти",
                 "О местности",
@@ -90,17 +128,28 @@ class Location:
 
             print(selection.displayChoices())
             choice = int(input())
-
-        if choice == 1:
+        if choice == "" or choice == 0:
+            return self.start(locs, player)
+        elif choice == 1:
             clear()
             player.say("Куда же мне идти?")
-            availLocs = self.getLocs(locs)
-            print(self.showMap(availLocs))
+            text = ""
+            number = 0
+            availLocs = []
+            for i in locs:
+                if i.name != self.name and i.available == True:
+                    number += 1
+                    availLocs.append(i)
+                    text += f"{colored(f'{number} -', 'cyan')} {i.displayName} "
+
+            print(text, f"{colored(0, 'cyan')} - Отмена")
             num = input()
             
-            if num == '0' or num == "":
+            if num == '0':
+                return self.start(locs, player)
+            elif num == "":
                 return self.start(locs, player, 1)
-            newLoc = availLocs[int(num)].name
+            newLoc = availLocs[int(num) - 1].name
             return goto(newLoc, locs)
         elif choice == 2:
             clear()
@@ -377,13 +426,27 @@ class Monster:
     def say(self, text):
         cprint(f"{self.race}: {text}", 'red')
 
-player = Player("Вася", "m", "человек")
+# Начало
+def start():
+    clear()
 
-locs= [
-    Location("Plane", "Ровнина", 20, 10, "Просто ровнина."),
-    Location("NotAPlane", "Не ровнина", 20, 10, "Это не ровнина."),
+    name = input("Введите ваше имя: ")
+    race = input("Введите ваш рассу: ")
+    gender = input("Выберите ваш пол[f/m]: ")
+
+    player = Player(name, gender, race)
+    return player
+
+# player = Player("Вася", "m", "человек")
+
+locs = [
+    Location("Plane", "Равнина", 20, 10, True, "Просто равнина."),
+    Location("NotAPlane", "Не равнина", 20, 10, True, "Это не равнина."),
+    Location("NotAPlane2", "Не равнина2", 20, 10, True, "Это не равнина."),
 ]
 
+clear()
+player = start()
 
 def goto(locName, locations = []):
     if locations == []:
@@ -394,5 +457,4 @@ def goto(locName, locations = []):
             newLoc = i
             return newLoc.start(locations, player)
 
-clear()
 goto("Plane", locs)
