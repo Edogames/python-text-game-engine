@@ -769,7 +769,7 @@ mainMenu.mainMenuScreen()
 
 player = start()
 
-
+# Объект игрока
 player = Player(player[0], player[2], player[1])
 
 # Переход
