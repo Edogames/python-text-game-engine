@@ -67,7 +67,10 @@ class Location:
         self.description = description
 
         self.available = available
+
         self.tpSound = pygame.mixer.Sound('Sounds/Player/Teleport.wav')
+        self.confirmSound = pygame.mixer.Sound('Sounds/Menus/Confirm.wav')
+        self.denySound = pygame.mixer.Sound('Sounds/Menus/Denied.wav')
 
     def stats(self):
         print(f"Имя местности: {self.displayName}")
@@ -114,23 +117,32 @@ class Location:
             num += 1
             text += f"{num} - {i.displayName}"
     
-    def start(self, locs, player, choice = 0):
+    def start(self, locs, player, choice = 0, confSnd = False, denSnd = False):
         clear()
         if choice == 0:
             header(f"Вы находитесь в {self.displayName}")
 
-            self.tpSound.play()
+            if confSnd == True:
+                self.confirmSound.play()
+
+            if confSnd == False and denSnd == False:
+                self.tpSound.play()
+
+            if denSnd == True:
+                self.denySound.play()
 
             selection = Choices([
                 "Идти",
                 "О местности",
+                "Игрок",
             ])
 
             print(selection.displayChoices())
             choice = int(input())
         if choice == "" or choice == 0:
-            return self.start(locs, player)
+            return self.start(locs, player, 0, False, True)
         elif choice == 1:
+            self.confirmSound.play()
             clear()
             player.say("Куда же мне идти?")
             text = ""
@@ -146,16 +158,32 @@ class Location:
             num = input()
             
             if num == '0':
-                return self.start(locs, player)
+                return self.start(locs, player, 0, False, True)
             elif num == "":
-                return self.start(locs, player, 1)
+                return self.start(locs, player, 1, False, True)
             newLoc = availLocs[int(num) - 1].name
             return goto(newLoc, locs)
         elif choice == 2:
+            self.confirmSound.play()
             clear()
             self.stats()
             input("Нажмите Enter что бы продолжить...")
-            return self.start(locs, player)
+            return self.start(locs, player, 0, True)
+        elif choice == 3:
+            clear()
+            selection = Choices([
+                "О себе",
+            ])
+            text = selection.displayChoices()
+            text += f"{colored('0 -', 'cyan')} Вернуться"
+            print(text)
+            choice = int(input())
+            if choice == 1:
+                player.stats()
+                input("Нажмите Enter что бы продолжить...")
+                return self.start(locs, player, 3, True, False)
+            elif choice == 0:
+                return self.start(locs, player, 0, False, True)
 
 # Предмет
 class Item:
@@ -461,16 +489,46 @@ def getRace():
 
 def getGender():
     value = input("Выберите ваш пол[ж/м]: ")
-    return value
+    man = ["м", "М", 'm', 'M']
+    isMan = 0
+    woman = ['f', 'F', 'ж', "Ж"]
+    isWoman = 0
+    for i in man:
+        if value == i:
+            isMan += 1
+    if isMan == 0:
+        for i in woman:
+            if value == i:
+                isWoman += 1
+
+    if isMan > 0:
+        return 'm'
+    elif isWoman > 0:
+        return 'f'
+    else:
+        return value
+
+goddess = [
+    NPC("Люцифер", "Дьявол", "f", "дьявол", True),
+    NPC("Габриелла", "Ангел", "f", "ангел", True),
+]
+
+devil = goddess[0]
+angel = goddess[1]
 
 def start(checkGender = False, err = False, data = []):
     clear()
+    header("Вы просыпаетесь в аду, и перед вами стоит дьяволица, раскошная женщина, и смотрит на вас не совсем довольная.")
+    input("Нажмите Enter.")
     if checkGender == False:
+        devil.say("Как звать?")
         name = getName()
+        devil.say("Таак... какой же ты рассы у нас?")
         race = getRace()
         checkGender = True
 
     if checkGender == True:
+        devil.say("Что-то не понятно, какого ты пола.")
         if err == True:
             warning("Такого пола нет!")
             name = data[0]
@@ -484,6 +542,45 @@ def start(checkGender = False, err = False, data = []):
 
         if yes == 0:
             return start(True, True, [name, race])
+
+    clear()
+    devil.say(f"Чтож, {name}, пришло время идти в ад за то, что ты " + "сделала" if gender == 'f' else "сделал")
+    input("Нажмите Enter.")
+    clear()
+    angel.say("Постой!")
+    input("Нажмите Enter.")
+    clear()
+    devil.say("Как ты тут оказалась? Ты же ангел.")
+    input("Нажмите Enter.")
+    clear()
+    angel.say("Знаю, и я решила что тебе стоит дать " + "ей шанс на новую жизнь" if gender == 'f' else "ему шанс на новую жизнь.")
+    input("Нажмите Enter.")
+    clear()
+    devil.say("...Ты сейчас серьёзна?")
+    input("Нажмите Enter.")
+    clear()
+    angel.say("Да, " + "ей ждут очень важные дела на земле." if gender == 'f' else "ему ждут очень важные дела на земле.")
+    input("Нажмите Enter.")
+    clear()
+    devil.say("А почему сама не займёшся этим?")
+    input("Нажмите Enter.")
+    clear()
+    angel.say("Мне не положено ничего делать, зато " + "ей можно" if gender == 'f' else "ему можно")
+    input("Нажмите Enter.")
+    clear()
+    devil.say(f"Эх...чтож, так и быть, тебе повезло, {name}...")
+    input("Нажмите Enter.")
+    clear()
+    devil.say(f"Ты не идёшь в ад, но учти, если не справишся, то твой путь тебе, думаю, понятен.")
+    input("Нажмите Enter.")
+    clear()
+
+    print("Произашла вспышка, и вы потеряли сознание...")
+    input("Нажмите Enter.")
+    header("Вы проснулись через час после всего, что случилось в том мире.")
+    input("Нажмите Enter.")
+    header("Вам предстоит начать новую жизнь, ведь вы теперь не " + "та, кем были." if gender == 'f' else "тот, кем были.")
+    input("Нажмите Enter.")
 
     player = Player(name, gender, race)
     return player
