@@ -62,13 +62,15 @@ class MainMenu:
 
 # Локации
 class Location:
-    def __init__(self, name: str, displayName: str, monsterChance: int, lootChance: int, peopleChance: int, available: bool = True, entities: list[list] = [], description: str = ""):
+    def __init__(self, name: str, displayName: str, monsterChance: int, lootChance: int, peopleChance: int, available: bool = True, entities: list[object] = [], description: str = "", availFrom: list[str] = []):
         self.name = name
         self.displayName = displayName
         self.monsterChance = monsterChance
         self.lootChance = lootChance
         self.peopleChance = peopleChance
         self.description = description
+
+        self.availFrom = availFrom
 
         self.entities = entities
 
@@ -88,7 +90,7 @@ class Location:
             monColor = "red"
         else:
             monColor = "green"
-        
+
         if self.lootChance >= 5:
             lootColor = "green"
         else:
@@ -107,39 +109,34 @@ class Location:
         for i in locations:
             if i.name != self.name:
                 availableLocs.append(i)
-        
+
         return availableLocs
 
     def getLoc(self, num: int):
         initLocs = self.getLocs()
         return initLocs[num - 1].name
 
-    def getEntity(self, player: object):
-        people = random.randint(0, self.peopleChance)
-        monster = random.randint(0, self.monsterChance)
-
-        data = [
-            people,
-            monster,
-        ]
+    def getPerson(self, player: object):
+        chance = random.randint(0, self.peopleChance)
 
         citizens = []
-        monsters = []
 
-        for i in self.entities:
-            if type(i) == NPC:
-                citizens.append(i)
-            if type(i) == Monster:
-                monsters.append(i)
-
-        result = max(data)
-
-        if result > 0:
-            for i in data:
-                if i == result:
-                    man = random.choice(citizens)
-                    return man.meet(player)
+        if len(self.entities) > 0:
+            for i in self.entities:
+                if type(i) == NPC:
+                    citizens.append(i)
         else:
+            return False
+
+        person = random.choice(citizens)
+
+        if chance > 5:
+            header("Начало встречи.")
+            input()
+            return person.meet(player, self.name)
+        else:
+            header("Конец встречи.")
+            input()
             return False
 
     def showMap(self, locations: list[object]):
@@ -149,10 +146,10 @@ class Location:
         for i in locations:
             num += 1
             text += f"{num} - {i.displayName}"
-    
-    def start(self, locs: list[object], player: object, choice: int = 0, confSnd: bool = False, denSnd: bool = False):
+
+    def start(self, locs: list[object], player: object, choice: str = '0', confSnd: bool = False, denSnd: bool = False):
         clear()
-        if choice == 0:
+        if choice == '0' or choice == '':
             header(f"Вы находитесь в {self.displayName}")
 
             if confSnd == True:
@@ -171,11 +168,11 @@ class Location:
             ])
 
             print(selection.displayChoices())
-            choice = int(input())
-            self.getEntity(player)
-        if choice == "" or choice == 0:
-            return self.start(locs, player, 0, False, True)
-        elif choice == 1:
+            choice = str(input())
+            self.getPerson(player)
+        if choice == "" or choice == '0':
+            return self.start(locs, player, '0', False, True)
+        elif choice == '1':
             self.confirmSound.play()
             clear()
             player.say("Куда же мне идти?")
@@ -184,26 +181,28 @@ class Location:
             availLocs = []
             for i in locs:
                 if i.name != self.name and i.available == True:
-                    number += 1
-                    availLocs.append(i)
-                    text += f"{colored(f'{number} -', 'cyan')} {i.displayName} "
+                    for j in i.availFrom:
+                        if j == self.name:
+                            number += 1
+                            availLocs.append(i)
+                            text += f"{colored(f'{number} -', 'cyan')} {i.displayName} "
 
-            print(text, f"{colored(0, 'cyan')} - Отмена")
+            print(text, f"{colored('0 -', 'cyan')} Отмена")
             num = input()
-            
+
             if num == '0':
                 return self.start(locs, player, 0, False, True)
             elif num == "":
                 return self.start(locs, player, 1, False, True)
             newLoc = availLocs[int(num) - 1].name
             return goto(newLoc, locs)
-        elif choice == 2:
+        elif choice == '2':
             self.confirmSound.play()
             clear()
             self.stats()
             input("Нажмите Enter что бы продолжить...")
-            return self.start(locs, player, 0, True)
-        elif choice == 3:
+            return self.start(locs, player, '0', True)
+        elif choice == '3':
             clear()
             selection = Choices([
                 "О себе",
@@ -215,9 +214,9 @@ class Location:
             if choice == 1:
                 player.stats()
                 input("Нажмите Enter что бы продолжить...")
-                return self.start(locs, player, 3, True, False)
+                return self.start(locs, player, '3', True, False)
             elif choice == 0:
-                return self.start(locs, player, 0, False, True)
+                return self.start(locs, player, '0', False, True)
 
 # Предмет
 class Item:
@@ -463,7 +462,7 @@ class NPC:
         if alert == True:
             header(f"Инвентарь {self.name} очищен")
         return self.inventory
-    
+
     def minusFromInv(self, item: object, alert: bool = True):
         if alert == True:
             header(f"С {self.name} отняли {item.name} {item.count} шт.")
@@ -476,17 +475,39 @@ class NPC:
                 else:
                     break
 
-    def meet(self, target):
+    def conversationWithStranger(self, player, placeName):
+        self.say(f"Очень приятно познакомиться, {player.name}, я {self.name}, как ты себя чувствуешь?")
+        self.relationList.append([player.name, 'Знакомая' if player.gender == 'f' else 'Знакомый'])
+        answ = input('Хорошо[х], Плохо[п]: ')
+        if answ == 'х':
+            self.say("Чтож, хих, я " + "рада." if self.gender == 'f' else "рад.")
+            input("Нажмите Enter.")
+            self.say("Ладно, встретимся позже.")
+            input("Нажмите Enter.")
+            return goto(placeName, [])
+        elif answ == 'х':
+            self.say(f"Оу, мне жаль {player.name}")
+            input("Нажмите Enter.")
+            self.say("Ладно, встретимся позже.")
+            input("Нажмите Enter.")
+            return goto(placeName, [])
+
+    def startMeet(self, player, placeName):
+        for i in self.relationList:
+            if player.name != i[0]:
+                return self.conversationWithStranger(player, placeName)
+
+    def meet(self, target, placeName):
         self.say(f"Привет, я {self.name}, хочешь говорить?")
         choice = input('[д/н]: ')
         if choice == 'д':
-            # return startMeet(self, player)
+            return self.startMeet(player, placeName)
             input("Нажмите Enter")
-            return False
+            return goto(placeName, [])
         else:
             self.say('Ну, видимо у тебя много дел, чтож, не буду мешать.')
             input("Нажмите Enter")
-            return False
+            return goto(placeName, [])
 
 # Враг/монстр
 class Monster:
@@ -529,6 +550,8 @@ class Monster:
 def getName():
     print("(Не вводя имя, вы дадите имя персонажу то же что и системе)")
     value = input("Введите ваше имя: ")
+    if value == "":
+        value = os.getlogin()
     return value
 
 def getRace():
@@ -539,10 +562,14 @@ def getGender():
     value = input("Выберите ваш пол[ж/м]: ")
     return value
 
-# Обычные не играбельные персонажи
-cityPeople = [
-    NPC("Линда", "кошка", "f", "житель", True),
-]
+def goto(locName: str, locations: list[object] = []):
+    if locations == []:
+        locations = locs
+
+    for i in locations:
+        if i.name == locName:
+            newLoc = i
+            return newLoc.start(locations, player, '0', False, False)
 
 # Не играбельное божество
 goddess = [
@@ -552,9 +579,9 @@ goddess = [
 
 # Локации
 locs = [
-    Location("Plane", "Равнина", 0, 0, 0, True, [], "Просто равнина."),
-    Location("Plane2", "Не равнина", 0, 0, 0, True, [], "Это не равнина."),
-    Location("City", "Город", 20, 10, 10, True, [cityPeople, ], "Жилой Город."),
+    Location("Plane", "Равнина", 0, 0, 0, True, [], "Просто равнина.", ['Plane2']),
+    Location("Plane2", "Не равнина", 0, 0, 0, True, [], "Это не равнина.", ['City']),
+    Location("City", "Город", 20, 10, 10, True, [NPC("Линда", "кошка", "f", "житель", True),], "Жилой Город.", ['Plane', 'Plane2']),
 ]
 
 devil = goddess[0]
@@ -564,9 +591,6 @@ player = []
 
 def start(checkRace: bool = False, checkGender: bool = False, err: bool = False, data: list = [], dialogue: bool = False, done: bool = False):
     clear()
-    name = ""
-    race = ""
-    gender = ""
 
     if checkRace == False and checkGender == False and dialogue == False:
         header("Вы просыпаетесь в аду, и перед вами стоит дьяволица, раскошная женщина, и смотрит на вас не совсем довольная.")
@@ -582,41 +606,34 @@ def start(checkRace: bool = False, checkGender: bool = False, err: bool = False,
         devil.say("Таак... какой же ты рассы у нас?")
         if err == True:
             warning("Расса не может быть пустым!")
-            name = data[0]
         race = getRace()
-        data.append(race)
 
         if race != "":
+            data.append(race)
             return start(False, True, False, data)
         else:
-            return start(True, False, True, [name])
+            return start(True, False, True, data)
 
     if checkGender == True:
         devil.say("Что-то не понятно, какого ты пола.")
         if err == True:
             warning("Такого пола нет!")
-            name = data[0]
-            race = data[1]
         genders = ['f', 'F', 'ж', "Ж", "м", "М", 'm', 'M']
         gender = getGender()
-        data.append(gender)
 
         yes = 0
         for i in genders:
             if gender == i:
                 yes += 1
         if yes == 0:
-            return start(False, True, True, [name, race], False)
+            return start(False, True, True, data, False)
         else:
+            data.append(gender)
             return start(False, False, False, data, True)
 
     if dialogue == True:
-
-        print(data)
-        input()
-
         clear()
-        devil.say(f"Чтож, {name}, пришло время идти в ад за то, что ты " + "сделала" if gender == 'f' else "сделал")
+        devil.say(f"Чтож, {data[0]}, пришло время идти в ад за то, что ты " + "сделала" if data[2] == 'f' else "сделал")
         input("Нажмите Enter.")
         clear()
         angel.say("Постой!")
@@ -625,22 +642,22 @@ def start(checkRace: bool = False, checkGender: bool = False, err: bool = False,
         devil.say("Как ты тут оказалась? Ты же ангел.")
         input("Нажмите Enter.")
         clear()
-        angel.say("Знаю, и я решила что тебе стоит дать " + "ей шанс на новую жизнь" if gender == 'f' else "ему шанс на новую жизнь.")
+        angel.say("Знаю, и я решила что тебе стоит дать " + "ей шанс на новую жизнь" if data[2] == 'f' else "ему шанс на новую жизнь.")
         input("Нажмите Enter.")
         clear()
         devil.say("...Ты сейчас серьёзна?")
         input("Нажмите Enter.")
         clear()
-        angel.say("Да, " + "ей ждут очень важные дела на земле." if gender == 'f' else "ему ждут очень важные дела на земле.")
+        angel.say("Да, " + "ей ждут очень важные дела на земле." if data[2] == 'f' else "ему ждут очень важные дела на земле.")
         input("Нажмите Enter.")
         clear()
         devil.say("А почему сама не займёшся этим?")
         input("Нажмите Enter.")
         clear()
-        angel.say("Мне не положено ничего делать, зато " + "ей можно" if gender == 'f' else "ему можно")
+        angel.say("Мне не положено ничего делать, зато " + "ей можно" if data[2] == 'f' else "ему можно")
         input("Нажмите Enter.")
         clear()
-        devil.say(f"Эх...чтож, так и быть, тебе повезло, {name}...")
+        devil.say(f"Эх...чтож, так и быть, тебе повезло, {data[0]}...")
         input("Нажмите Enter.")
         clear()
         devil.say(f"Ты не идёшь в ад, но учти, если не справишся, то твой путь тебе, думаю, понятен.")
@@ -651,11 +668,9 @@ def start(checkRace: bool = False, checkGender: bool = False, err: bool = False,
         input("Нажмите Enter.")
         header("Вы проснулись через час после всего, что случилось в том мире.")
         input("Нажмите Enter.")
-        header("Вам предстоит начать новую жизнь, ведь вы теперь не " + "та, кем были." if gender == 'f' else "тот, кем были.")
+        header("Вам предстоит начать новую жизнь, ведь вы теперь не " + "та, кем были." if data[2] == 'f' else "тот, кем были.")
         input("Нажмите Enter.")
 
-        print(data)
-        input()
         return data
 
 clear()
@@ -664,15 +679,6 @@ clear()
 player = start()
 
 player = Player(player[0], player[2], player[1])
-
-def goto(locName: str, locations: list[object] = []):
-    if locations == []:
-        locations = locs
-
-    for i in locations:
-        if i.name == locName:
-            newLoc = i
-            return newLoc.start(locations, player)
 
 # Переход
 goto("Plane", locs)
