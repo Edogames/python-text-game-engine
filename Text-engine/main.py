@@ -1,6 +1,5 @@
 # Важные компоненты
 import math
-
 from termcolor import colored, cprint
 import time
 import os
@@ -11,6 +10,72 @@ import mypy
 pygame.init()
 pygame.mixer.init()
 
+# Текст выбора
+class Choices:
+    def __init__(self, choices: list[str] = []):
+        self.choices = choices
+
+    def displayChoices(self):
+        num = 0
+        text = ""
+        for i in self.choices:
+            num += 1
+            text += f"{colored(f'{num} -', 'cyan')} {i} "
+
+        return text
+
+# Меню
+class MainMenu:
+    def __init__(self, wrdLimit = 10, cheats: bool = False):
+        self.cheats = cheats
+        self.wrdLimit = wrdLimit
+
+    def options(self):
+        if self.cheats == False:
+            cprint("Читы отключены.", "cyan")
+        else:
+            cprint("Читы включены.", "cyan")
+
+        choices = Choices([
+            f"Лимит слов в строке: {self.wrdLimit}(По умолчанию)",
+            "Вернуться",
+        ])
+
+        print(choices.displayChoices())
+
+        choice = input("Выбор: ")
+
+        if choice == '1':
+            new_wrdLimit = input("Введите новое число: ")
+            if new_wrdLimit != "":
+                self.wrdLimit = int(new_wrdLimit)
+                return self.options()
+        elif choice == '2':
+            return self.mainMenuScreen()
+
+        return self.mainMenuScreen()
+
+    def mainMenuScreen(self):
+        choices = Choices(
+            [
+                "Играть",
+                "Настройки",
+            ]
+        )
+
+        print(choices.displayChoices())
+
+        choice = int(input("Ваш выбор: "))
+
+        if choice == 1:
+            return True
+        else:
+            return self.options()
+
+
+mainMenu = MainMenu(10, False)
+
+# Всякие детекторы
 def detectGender(val):
     female = ['f', 'F', 'ж', "Ж"]
     male = ["м", "М", 'm', 'M']
@@ -21,7 +86,6 @@ def detectGender(val):
         return 'm'
     else:
         return False
-
 def detectChoice(val):
     yes = ['д', 'Д', 'y', 'Y']
     no = ['н',  'Н',  'n',  'N']
@@ -33,8 +97,8 @@ def detectChoice(val):
     else:
         return False
 
-def splitText(text: str):
-    limit = 10
+# Разделитель текста по лимиту
+def splitText(text: str, limit = mainMenu.wrdLimit):
     words = text.split()
     newText = ""
     wrdCount = 0
@@ -61,43 +125,6 @@ def success(text: str):
 # Очистка консоли
 def clear():
     return os.system('cls' if os.name=='nt' else 'clear')
-
-class Choices:
-    def __init__(self, choices: list[str] = []):
-        self.choices = choices
-
-    def displayChoices(self):
-        num = 0
-        text = ""
-        for i in self.choices:
-            num += 1
-            text += f"{colored(f'{num} -', 'cyan')} {i} "
-
-        return text
-
-# Меню
-class MainMenu:
-    def __init__(self, cheats: bool = False):
-        self.cheats = cheats
-
-    def mainMenuScreen(self):
-        print(f"{colored('1 -', 'cyan')} Играть, {colored('2 -')} Настройки")
-
-        choice = int(input("Ваш выбор: "))
-
-        if choice == 1:
-            return start()
-        else:
-            return getattr(self, 'options')
-
-    def options(self):
-        if self.cheats == False:
-            cprint("Читы отключены.", "cyan")
-        else:
-            cprint("Читы включены.", "cyan")
-
-        input("Нажмите Enter что бы вернуться...")
-        return self.mainMenuScreen()
 
 # Локации
 class Location:
@@ -738,7 +765,10 @@ def start(checkRace: bool = False, checkGender: bool = False, err: bool = False,
 clear()
 
 # Начало
+mainMenu.mainMenuScreen()
+
 player = start()
+
 
 player = Player(player[0], player[2], player[1])
 
