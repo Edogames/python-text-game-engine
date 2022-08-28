@@ -1,9 +1,11 @@
 # Важные компоненты
 from termcolor import colored, cprint
-from playsound import playsound
 import time
 import os
 import random
+import pygame
+pygame.init()
+pygame.mixer.init()
 
 # Типы уведомлений
 def warning(text):
@@ -64,15 +66,14 @@ class Location:
         self.description = description
 
         self.available = available
-
-        self.tpSound = 'Sounds/Player/Teleport.wav'
+        self.tpSound = pygame.mixer.Sound('Sounds/Player/Teleport.wav')
 
     def stats(self):
         print(f"Имя местности: {self.displayName}")
         if self.description != "":
             print(f"Описание местности: {self.description}")
         else:
-            print(f"Неизвестно.")
+            print("Неизвестно.")
         if self.monsterChance >= 5:
             monColor = "red"
         else:
@@ -103,8 +104,6 @@ class Location:
         initLocs = self.getLocs()
         return initLocs[num - 1].name
 
-    def playSFX(self, value):
-        return playsound(value)
 
     def showMap(self, locations):
         text = ""
@@ -119,7 +118,7 @@ class Location:
         if choice == 0:
             header(f"Вы находитесь в {self.displayName}")
 
-            self.playSFX(self.tpSound)
+            self.tpSound.play()
 
             selection = Choices([
                 "Идти",
@@ -178,10 +177,15 @@ class Heal:
         self.count = count
         self.description = description
 
+        self.useSound = pygame.mixer.sound('Sounds/Player/Heal.wav')
+        self.statsSound = pygame.mixer.sound('Sounds/Menus/Confirm.wav')
+
     def use(self, target):
+        self.useSound.play()
         return target.health + self.heal
 
     def stats(self):
+        self.statsSound.play()
         print(f"{colored('|Имя', 'cyan')}: {self.dispName}")
         print(f"{colored('|Описание', 'cyan')}: {self.description}")
         print(f"{colored('|Количество', 'cyan')}: {self.count}")
@@ -201,11 +205,11 @@ class Player:
         self.armor = False
 
         # For better text
-        if gender == "female" or gender == "Female" or gender == 'f' or gender == 'F':
+        if gender == "female" or gender == "Female" or gender == 'f' or gender == 'F' or gender == 'ж' or gender == 'Ж':
             self.textColor = "magenta"
             self.gender = "f"
             self.displayGender = "Женский"
-        elif gender == "male" or gender == "Male" or gender == 'm' or gender == 'M':
+        elif gender == "male" or gender == "Male" or gender == 'm' or gender == 'M' or gender == 'м' or gender == 'М':
             self.textColor = "green"
             self.gender = "m"
             self.displayGender = "Мужской"
@@ -220,7 +224,10 @@ class Player:
 
         self.inventory = []
 
+        self.confirmSound = pygame.mixer.sound('Sounds/Menus/Confirm.wav')
+
     def stats(self):
+        self.confirmSound.play()
         cprint(f"Уровень: {self.lvl}", self.textColor)
         cprint(f"Имя: {self.name}", self.textColor)
         cprint(f"Пол: {self.displayGender}", self.textColor)
@@ -229,6 +236,7 @@ class Player:
 
     def showInv(self):
         if len(self.inventory) > 0:
+            self.confirmSound.play()
             header("Инвентарь")
             for i in self.inventory:
                 i.stats()
@@ -404,12 +412,15 @@ class Monster:
         self.defeat = False
         self.health = 100
 
+        self.hitSound = pygame.mixer.Sound('Sounds/Player/Hit.wav')
+
     def takeDMG(self, amount):
         self.health -= amount
         return self.checkHealth()
 
     def doDMG(self, target):
         warning(f"{self.race} атакует {target.name}!")
+        self.hitSound.play()
         target.health -= self.dmgPoint
 
     def death(self):
@@ -432,12 +443,11 @@ def start():
 
     name = input("Введите ваше имя: ")
     race = input("Введите ваш рассу: ")
-    gender = input("Выберите ваш пол[f/m]: ")
+    gender = input("Выберите ваш пол[ж/м]: ")
 
     player = Player(name, gender, race)
     return player
 
-# player = Player("Вася", "m", "человек")
 
 locs = [
     Location("Plane", "Равнина", 20, 10, True, "Просто равнина."),
