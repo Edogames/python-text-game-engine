@@ -4,6 +4,7 @@ import time
 import os
 import random
 import pygame
+
 pygame.init()
 pygame.mixer.init()
 
@@ -153,7 +154,8 @@ class Location:
         elif choice == 2:
             clear()
             self.stats()
-            return self.start(locs)
+            input("Нажмите Enter что бы продолжить...")
+            return self.start(locs, player)
 
 # Предмет
 class Item:
@@ -177,8 +179,8 @@ class Heal:
         self.count = count
         self.description = description
 
-        self.useSound = pygame.mixer.sound('Sounds/Player/Heal.wav')
-        self.statsSound = pygame.mixer.sound('Sounds/Menus/Confirm.wav')
+        self.useSound = pygame.mixer.Sound('Sounds/Player/Heal.wav')
+        self.statsSound = pygame.mixer.Sound('Sounds/Menus/Confirm.wav')
 
     def use(self, target):
         self.useSound.play()
@@ -190,6 +192,17 @@ class Heal:
         print(f"{colored('|Описание', 'cyan')}: {self.description}")
         print(f"{colored('|Количество', 'cyan')}: {self.count}")
         return print(f"{colored('|__________________', 'cyan')}")
+
+# Еда
+class Food:
+    def __init__(self, name, hunger, description):
+        self.name = name
+        self.hunger = hunger
+        self.description = description
+
+    def use(self, target):
+        header(f"Вы использовали {self.name} на {target.name}.")
+        return target.stamina + self.hunger
 
 # Игрок
 class Player:
@@ -224,7 +237,7 @@ class Player:
 
         self.inventory = []
 
-        self.confirmSound = pygame.mixer.sound('Sounds/Menus/Confirm.wav')
+        self.confirmSound = pygame.mixer.Sound('Sounds/Menus/Confirm.wav')
 
     def stats(self):
         self.confirmSound.play()
@@ -437,18 +450,45 @@ class Monster:
     def say(self, text):
         cprint(f"{self.race}: {text}", 'red')
 
-# Начало
-def start():
-    clear()
+# Получение данных
+def getName():
+    value = input("Введите ваше имя: ")
+    return value
 
-    name = input("Введите ваше имя: ")
-    race = input("Введите ваш рассу: ")
-    gender = input("Выберите ваш пол[ж/м]: ")
+def getRace():
+    value = input("Введите ваш рассу: ")
+    return value
+
+def getGender():
+    value = input("Выберите ваш пол[ж/м]: ")
+    return value
+
+def start(checkGender = False, err = False, data = []):
+    clear()
+    if checkGender == False:
+        name = getName()
+        race = getRace()
+        checkGender = True
+
+    if checkGender == True:
+        if err == True:
+            warning("Такого пола нет!")
+            name = data[0]
+            race = data[1]
+        genders = ['f', 'F', 'ж', "Ж", "м", "М", 'm', 'M']
+        gender = getGender()
+        yes = 0
+        for i in genders:
+            if gender == i:
+                yes += 1
+
+        if yes == 0:
+            return start(True, True, [name, race])
 
     player = Player(name, gender, race)
     return player
 
-
+# Локации
 locs = [
     Location("Plane", "Равнина", 20, 10, True, "Просто равнина."),
     Location("NotAPlane", "Не равнина", 20, 10, True, "Это не равнина."),
@@ -456,6 +496,8 @@ locs = [
 ]
 
 clear()
+
+# Начало
 player = start()
 
 def goto(locName, locations = []):
@@ -467,4 +509,5 @@ def goto(locName, locations = []):
             newLoc = i
             return newLoc.start(locations, player)
 
+# Переход
 goto("Plane", locs)
