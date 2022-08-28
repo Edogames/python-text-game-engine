@@ -11,12 +11,51 @@ import mypy
 pygame.init()
 pygame.mixer.init()
 
+def detectGender(val):
+    female = ['f', 'F', 'ж', "Ж"]
+    male = ["м", "М", 'm', 'M']
+
+    if val in female:
+        return 'f'
+    elif val in male:
+        return 'm'
+    else:
+        return False
+
+def detectChoice(val):
+    yes = ['д', 'Д', 'y', 'Y']
+    no = ['н',  'Н',  'n',  'N']
+
+    if val in yes:
+        return 'yes'
+    elif val in no:
+        return 'no'
+    else:
+        return False
+
+def splitText(text: str):
+    limit = 10
+    words = text.split()
+    newText = ""
+    wrdCount = 0
+    for i in words:
+        newText += i + " "
+        wrdCount += 1
+        if wrdCount == limit or "." in i:
+            newText += '\n'
+            wrdCount = 0
+
+    return newText
+
 # Типы уведомлений
 def warning(text: str):
+    text = splitText(text)
     return print(f"{colored(text, 'red')}")
 def header(text: str):
-    return print(f"{colored(text, 'yellow')}")
+    text = splitText(text)
+    print(f"{colored(text, 'yellow')}")
 def success(text: str):
+    text = splitText(text)
     return print(colored(f'Успех! {text}!', "green"))
 
 # Очистка консоли
@@ -116,8 +155,9 @@ class Location:
         initLocs = self.getLocs()
         return initLocs[num - 1].name
 
-    def getPerson(self, player: object):
-        chance = random.randint(0, self.peopleChance)
+    def getPerson(self):
+        maxChance = self.peopleChance * 10
+        chance = random.randint(0, maxChance)
 
         citizens = []
 
@@ -126,17 +166,19 @@ class Location:
                 if type(i) == NPC:
                     citizens.append(i)
         else:
+            header("Тут никаго.")
+            input("Нажмите Enter.")
             return False
 
         person = random.choice(citizens)
 
-        if chance > 5:
+        if chance > maxChance / 2:
             header("Начало встречи.")
-            input()
-            return person.meet(player, self.name)
+            input("Нажмите Enter.")
+            return person
         else:
-            header("Конец встречи.")
-            input()
+            header("Пока нескем общаться.")
+            input("Нажмите Enter.")
             return False
 
     def showMap(self, locations: list[object]):
@@ -165,12 +207,12 @@ class Location:
                 "Идти",
                 "О местности",
                 "Игрок",
+                "Поговорить",
             ])
 
             print(selection.displayChoices())
             choice = str(input())
-            self.getPerson(player)
-        if choice == "" or choice == '0':
+        if choice == '0' or choice == "":
             return self.start(locs, player, '0', False, True)
         elif choice == '1':
             self.confirmSound.play()
@@ -191,11 +233,10 @@ class Location:
             num = input()
 
             if num == '0':
-                return self.start(locs, player, 0, False, True)
+                return self.start(locs, player, '0', False, True)
             elif num == "":
-                return self.start(locs, player, 1, False, True)
-            newLoc = availLocs[int(num) - 1].name
-            return goto(newLoc, locs)
+                return self.start(locs, player, '1', False, True)
+            return goto(availLocs[int(num) - 1].name, locs)
         elif choice == '2':
             self.confirmSound.play()
             clear()
@@ -217,6 +258,12 @@ class Location:
                 return self.start(locs, player, '3', True, False)
             elif choice == 0:
                 return self.start(locs, player, '0', False, True)
+        elif choice == '4':
+            persone = self.getPerson()
+            if persone == False:
+                return self.start(locs, player, '0', False, True)
+            else:
+                persone.meet(player, self.name)
 
 # Предмет
 class Item:
@@ -336,6 +383,7 @@ class Player:
         data[1]
 
     def say(self, text: str):
+        text = splitText(text)
         cprint(f'{self.name}: {text}', self.textColor)
 
     def addToInv(self, item: object):
@@ -377,7 +425,7 @@ class Player:
 
 # Не игровой персонаж
 class NPC:
-    def __init__(self, name: str, race: str, gender: str, type: str, gay: bool, married: list[bool, str] = [False, ""]):
+    def __init__(self, name: str, race: str, gender: str, type: str, gay: bool, married: list[str, str] = ["", ""]):
         self.name = name
         self.race = race
         self.gender = gender
@@ -426,6 +474,7 @@ class NPC:
                 return warning(f"{self.name} Мертва.")
 
     def say(self, text: str):
+        text = splitText(text)
         cprint(f'{self.name}: {text}', self.textColor)
 
     def showInv(self):
@@ -475,39 +524,56 @@ class NPC:
                 else:
                     break
 
-    def conversationWithStranger(self, player, placeName):
+    def endConversation(self, placeName: str):
+            return goto(placeName)
+
+    def conversationWithStranger(self, player: object, placeName: str):
         self.say(f"Очень приятно познакомиться, {player.name}, я {self.name}, как ты себя чувствуешь?")
         self.relationList.append([player.name, 'Знакомая' if player.gender == 'f' else 'Знакомый'])
-        answ = input('Хорошо[х], Плохо[п]: ')
-        if answ == 'х':
+        answ = input('Хорошо[д], Плохо[н]: ')
+        answ = detectChoice(answ)
+        if answ == 'yes':
             self.say("Чтож, хих, я " + "рада." if self.gender == 'f' else "рад.")
             input("Нажмите Enter.")
             self.say("Ладно, встретимся позже.")
             input("Нажмите Enter.")
-            return goto(placeName, [])
-        elif answ == 'х':
+            return self.endConversation(placeName)
+        elif answ == 'no':
             self.say(f"Оу, мне жаль {player.name}")
             input("Нажмите Enter.")
             self.say("Ладно, встретимся позже.")
             input("Нажмите Enter.")
-            return goto(placeName, [])
+            return self.endConversation(placeName)
+        else:
+            return self.conversationWithStranger(player, placeName)
 
     def startMeet(self, player, placeName):
+        yes = 0
         for i in self.relationList:
-            if player.name != i[0]:
-                return self.conversationWithStranger(player, placeName)
+            if player.name == i[0]:
+                yes += 1
 
-    def meet(self, target, placeName):
-        self.say(f"Привет, я {self.name}, хочешь говорить?")
+        if yes == 0:
+            return self.conversationWithStranger(player, placeName)
+
+    def meet(self, player, placeName, err = False):
+        if err == True:
+            warning("Такого выбора нет!")
+        else:
+            self.say(f"Привет, я {self.name}, хочешь говорить?")
+
         choice = input('[д/н]: ')
-        if choice == 'д':
-            return self.startMeet(player, placeName)
+        choice = detectChoice(choice)
+        if choice == 'yes':
+            self.startMeet(player, placeName)
             input("Нажмите Enter")
             return goto(placeName, [])
-        else:
+        elif choice == 'no':
             self.say('Ну, видимо у тебя много дел, чтож, не буду мешать.')
             input("Нажмите Enter")
             return goto(placeName, [])
+        else:
+            return self.meet(player, placeName, True)
 
 # Враг/монстр
 class Monster:
@@ -544,6 +610,7 @@ class Monster:
             return self.health
 
     def say(self, text: str):
+        text = splitText(text)
         cprint(f"{self.race}: {text}", 'red')
 
 # Получение данных
@@ -558,10 +625,7 @@ def getRace():
     value = input("Введите ваш рассу: ")
     return value
 
-def getGender():
-    value = input("Выберите ваш пол[ж/м]: ")
-    return value
-
+# Идти в
 def goto(locName: str, locations: list[object] = []):
     if locations == []:
         locations = locs
@@ -584,6 +648,7 @@ locs = [
     Location("City", "Город", 20, 10, 10, True, [NPC("Линда", "кошка", "f", "житель", True),], "Жилой Город.", ['Plane', 'Plane2']),
 ]
 
+# Другие персонажи
 devil = goddess[0]
 angel = goddess[1]
 
@@ -618,18 +683,15 @@ def start(checkRace: bool = False, checkGender: bool = False, err: bool = False,
         devil.say("Что-то не понятно, какого ты пола.")
         if err == True:
             warning("Такого пола нет!")
-        genders = ['f', 'F', 'ж', "Ж", "м", "М", 'm', 'M']
-        gender = getGender()
 
-        yes = 0
-        for i in genders:
-            if gender == i:
-                yes += 1
-        if yes == 0:
-            return start(False, True, True, data, False)
-        else:
+        gender = input('[м/ж]: ')
+        gender = detectGender(gender)
+
+        if gender == 'm' or gender == 'f':
             data.append(gender)
             return start(False, False, False, data, True)
+        else:
+            return start(False, True, True, data, False)
 
     if dialogue == True:
         clear()
