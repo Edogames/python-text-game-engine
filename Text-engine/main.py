@@ -1,14 +1,69 @@
 # Важные компоненты
-import math
 from termcolor import colored, cprint
 import time
 import os
 import random
 import pygame
-import mypy
+import json
 
 pygame.init()
 pygame.mixer.init()
+
+class SaveSystem:
+    def __init__(self, player: list[object] = [], location: str = "", npc: list = []):
+        if len(player) > 0:
+            self.player = player[0]
+        self.npc = npc
+        self.location = location
+        self.save_data = []
+
+    def save(self):
+        self.save_data = [
+            {
+                'name': self.player.name,
+                'gender': self.player.gender,
+                'race': self.player.race,
+                'inventory': self.player.inventory,
+            },
+            {
+                'name': self.location,
+            },
+        ]
+
+        newNpcArr = []
+        if len(self.npc) > 0:
+            for i in self.npc:
+                newArr = {
+                    'name': i.name,
+                    'race': i.race,
+                    'gender': i.gender,
+                    'type': i.type,
+                    'gay': i.gay,
+                    'married': i.married,
+                    'relationList': i.relationList,
+                    'inventory': i.inventory,
+                }
+                newNpcArr.append(newArr)
+            self.save_data.append(newNpcArr)
+
+        data = json.dumps(self.save_data, ensure_ascii=False)
+
+        jsonFile = open('save.json', 'w')
+
+        jsonFile.write(data)
+        return jsonFile.close()
+
+    def load(self):
+        if os.path.exists('save.json'):
+            with open('save.json', 'r') as f:
+                objs = json.loads(f.read())
+                print(objs)
+                print(type(objs))
+                input()
+                return objs
+        else:
+            warning("Нет сохранений!")
+            return False
 
 # Текст выбора
 class Choices:
@@ -29,8 +84,11 @@ class MainMenu:
     def __init__(self, wrdLimit = 10, cheats: bool = False):
         self.cheats = cheats
         self.wrdLimit = wrdLimit
+        self.saveSystem = SaveSystem()
+        self.data = True
 
     def options(self):
+        clear()
         if self.cheats == False:
             cprint("Читы отключены.", "cyan")
         else:
@@ -43,9 +101,11 @@ class MainMenu:
 
         print(choices.displayChoices())
 
-        choice = input("Выбор: ")
+        choice = str(input("Выбор: "))
 
-        if choice == '1':
+        if choice == '':
+            return self.options()
+        elif choice == '1':
             new_wrdLimit = input("Введите новое число: ")
             if new_wrdLimit != "":
                 self.wrdLimit = int(new_wrdLimit)
@@ -55,7 +115,33 @@ class MainMenu:
 
         return self.mainMenuScreen()
 
+    def playBtn(self):
+        clear()
+        choices = Choices([
+            "Начать новую игру",
+            "Загрузить сохранение",
+            "Назад",
+        ])
+
+        print(choices.displayChoices())
+        choice = str(input("Ваш выбор: "))
+
+        if choice == '':
+            return self.playBtn()
+        elif choice == '3':
+            return self.mainMenuScreen()
+        elif choice == '1':
+            return self.data
+        elif choice == '2':
+            self.data = self.saveSystem
+            if self.data != False:
+                return self.data
+            else:
+                input("Нажмите Enter.")
+                return self.playBtn()
+
     def mainMenuScreen(self):
+        clear()
         choices = Choices(
             [
                 "Играть",
@@ -65,13 +151,14 @@ class MainMenu:
 
         print(choices.displayChoices())
 
-        choice = int(input("Ваш выбор: "))
+        choice = str(input("Ваш выбор: "))
 
-        if choice == 1:
-            return True
-        else:
+        if choice == '':
+            return self.mainMenuScreen()
+        elif choice == '1':
+            return self.playBtn()
+        elif choice == '2':
             return self.options()
-
 
 mainMenu = MainMenu(10, False)
 
@@ -98,7 +185,8 @@ def detectChoice(val):
         return False
 
 # Разделитель текста по лимиту
-def splitText(text: str, limit = mainMenu.wrdLimit):
+def splitText(text: str):
+    limit = mainMenu.wrdLimit
     words = text.split()
     newText = ""
     wrdCount = 0
@@ -112,15 +200,38 @@ def splitText(text: str, limit = mainMenu.wrdLimit):
     return newText
 
 # Типы уведомлений
-def warning(text: str):
+def warning(text: str, anim: bool = True):
     text = splitText(text)
-    return print(f"{colored(text, 'red')}")
-def header(text: str):
+    if anim == True:
+        for i in text:
+            time.sleep(0.025)
+            cprint(i, 'red', end='', flush=True)
+        print()
+        time.sleep(0.15)
+        return
+    else:
+        return cprint(text, 'red')
+def header(text: str, anim: bool = True):
     text = splitText(text)
-    print(f"{colored(text, 'yellow')}")
-def success(text: str):
+    if anim == True:
+        for i in text:
+            time.sleep(0.01)
+            cprint(i, 'yellow', end='', flush=True)
+        print()
+        time.sleep(0.15)
+        return
+    else:
+        return cprint(text, 'yellow')
+def success(text: str, anim: bool = True):
     text = splitText(text)
-    return print(colored(f'Успех! {text}!', "green"))
+    if anim == True:
+        for i in text:
+            time.sleep(0.025)
+            cprint(i, 'green', end='', flush=True)
+        time.sleep(0.15)
+        return
+    else:
+        return cprint(text, 'green')
 
 # Очистка консоли
 def clear():
@@ -217,18 +328,27 @@ class Location:
             text += f"{num} - {i.displayName}"
 
     def start(self, locs: list[object], player: object, choice: str = '0', confSnd: bool = False, denSnd: bool = False):
+        if len(self.entities) > 0:
+            saveSystem = SaveSystem([player], self.name, [self.entities[0]])
+            saveSystem.save()
+        else:
+            saveSystem = SaveSystem([player], self.name)
+            saveSystem.save()
+
         clear()
         if choice == '0' or choice == '':
-            header(f"Вы находитесь в {self.displayName}")
-
             if confSnd == True:
                 self.confirmSound.play()
+                header(f"Вы находитесь в {self.displayName}", False)
 
             if confSnd == False and denSnd == False:
                 self.tpSound.play()
+                header(f"Вы находитесь в {self.displayName}")
 
             if denSnd == True:
                 self.denySound.play()
+                header(f"Вы находитесь в {self.displayName}", False)
+
 
             selection = Choices([
                 "Идти",
@@ -502,7 +622,7 @@ class NPC:
 
     def say(self, text: str):
         text = splitText(text)
-        cprint(f'{self.name}: {text}', self.textColor)
+        return cprint(f'{self.name}: {text}', self.textColor)
 
     def showInv(self):
         if len(self.inventory) > 0:
@@ -668,11 +788,16 @@ goddess = [
     NPC("Габриелла", "Ангел", "f", "ангел", True),
 ]
 
+cityNpc = [
+    NPC("Линда", "кошка", "f", "житель", True),
+    NPC("Лара", "ящерица", "f", "воительница", True),
+]
+
 # Локации
 locs = [
     Location("Plane", "Равнина", 0, 0, 0, True, [], "Просто равнина.", ['Plane2']),
     Location("Plane2", "Не равнина", 0, 0, 0, True, [], "Это не равнина.", ['City']),
-    Location("City", "Город", 20, 10, 10, True, [NPC("Линда", "кошка", "f", "житель", True),], "Жилой Город.", ['Plane', 'Plane2']),
+    Location("City", "Город", 20, 10, 10, True, [cityNpc], "Жилой Город.", ['Plane', 'Plane2']),
 ]
 
 # Другие персонажи
@@ -681,96 +806,112 @@ angel = goddess[1]
 
 player = []
 
-def start(checkRace: bool = False, checkGender: bool = False, err: bool = False, data: list = [], dialogue: bool = False, done: bool = False):
-    clear()
-
-    if checkRace == False and checkGender == False and dialogue == False:
-        header("Вы просыпаетесь в аду, и перед вами стоит дьяволица, раскошная женщина, и смотрит на вас не совсем довольная.")
-        input("Нажмите Enter.")
-        clear()
-        devil.say("Как звать?")
-        name = getName()
-        data.append(name)
-
-        return start(True, False, False, data)
-
-    if checkRace == True:
-        devil.say("Таак... какой же ты рассы у нас?")
-        if err == True:
-            warning("Расса не может быть пустым!")
-        race = getRace()
-
-        if race != "":
-            data.append(race)
-            return start(False, True, False, data)
-        else:
-            return start(True, False, True, data)
-
-    if checkGender == True:
-        devil.say("Что-то не понятно, какого ты пола.")
-        if err == True:
-            warning("Такого пола нет!")
-
-        gender = input('[м/ж]: ')
-        gender = detectGender(gender)
-
-        if gender == 'm' or gender == 'f':
-            data.append(gender)
-            return start(False, False, False, data, True)
-        else:
-            return start(False, True, True, data, False)
-
-    if dialogue == True:
-        clear()
-        devil.say(f"Чтож, {data[0]}, пришло время идти в ад за то, что ты " + "сделала" if data[2] == 'f' else "сделал")
-        input("Нажмите Enter.")
-        clear()
-        angel.say("Постой!")
-        input("Нажмите Enter.")
-        clear()
-        devil.say("Как ты тут оказалась? Ты же ангел.")
-        input("Нажмите Enter.")
-        clear()
-        angel.say("Знаю, и я решила что тебе стоит дать " + "ей шанс на новую жизнь" if data[2] == 'f' else "ему шанс на новую жизнь.")
-        input("Нажмите Enter.")
-        clear()
-        devil.say("...Ты сейчас серьёзна?")
-        input("Нажмите Enter.")
-        clear()
-        angel.say("Да, " + "ей ждут очень важные дела на земле." if data[2] == 'f' else "ему ждут очень важные дела на земле.")
-        input("Нажмите Enter.")
-        clear()
-        devil.say("А почему сама не займёшся этим?")
-        input("Нажмите Enter.")
-        clear()
-        angel.say("Мне не положено ничего делать, зато " + "ей можно" if data[2] == 'f' else "ему можно")
-        input("Нажмите Enter.")
-        clear()
-        devil.say(f"Эх...чтож, так и быть, тебе повезло, {data[0]}...")
-        input("Нажмите Enter.")
-        clear()
-        devil.say(f"Ты не идёшь в ад, но учти, если не справишся, то твой путь тебе, думаю, понятен.")
-        input("Нажмите Enter.")
-        clear()
-
-        print("Произашла вспышка, и вы потеряли сознание...")
-        input("Нажмите Enter.")
-        header("Вы проснулись через час после всего, что случилось в том мире.")
-        input("Нажмите Enter.")
-        header("Вам предстоит начать новую жизнь, ведь вы теперь не " + "та, кем были." if data[2] == 'f' else "тот, кем были.")
-        input("Нажмите Enter.")
-
-        return data
-
-clear()
-
 # Начало
 mainMenu.mainMenuScreen()
 
-player = start()
+print(mainMenu.data)
+input()
 
-# Объект игрока
-player = Player(player[0], player[2], player[1])
+if mainMenu.data == True:
+    def start(checkRace: bool = False, checkGender: bool = False, err: bool = False, data: list = [], dialogue: bool = False, done: bool = False):
+        clear()
 
-# Переход
-goto("Plane", locs)
+        if checkRace == False and checkGender == False and dialogue == False:
+            header("Вы просыпаетесь в аду, и перед вами стоит дьяволица, раскошная женщина, и смотрит на вас не совсем довольная.")
+            input("Нажмите Enter.")
+            clear()
+            devil.say("Как звать?")
+            name = getName()
+            data.append(name)
+
+            return start(True, False, False, data)
+
+        if checkRace == True:
+            devil.say("Таак... какой же ты рассы у нас?")
+            if err == True:
+                warning("Расса не может быть пустым!")
+            race = getRace()
+
+            if race != "":
+                data.append(race)
+                return start(False, True, False, data)
+            else:
+                return start(True, False, True, data)
+
+        if checkGender == True:
+            devil.say("Что-то не понятно, какого ты пола.")
+            if err == True:
+                warning("Такого пола нет!")
+
+            gender = input('[м/ж]: ')
+            gender = detectGender(gender)
+
+            if gender == 'm' or gender == 'f':
+                data.append(gender)
+                return start(False, False, False, data, True)
+            else:
+                return start(False, True, True, data, False)
+
+        if dialogue == True:
+            clear()
+            devil.say(f"Чтож, {data[0]}, пришло время идти в ад за то, что ты {'сделала' if data[2] == 'f' else 'сделал'}")
+            input("Нажмите Enter.")
+            clear()
+            angel.say("Постой!")
+            input("Нажмите Enter.")
+            clear()
+            devil.say("Как ты тут оказалась? Ты же ангел.")
+            input("Нажмите Enter.")
+            clear()
+            angel.say(f"Знаю, и я решила что тебе стоит дать {'ей' if data[2] == 'f' else 'ему'} шанс на новую жизнь.")
+            input("Нажмите Enter.")
+            clear()
+            devil.say("...Ты сейчас серьёзна?")
+            input("Нажмите Enter.")
+            clear()
+            angel.say(f"Да, {'ей' if data[2] == 'f' else 'ему'} ждут очень важные дела на земле.")
+            input("Нажмите Enter.")
+            clear()
+            devil.say("А почему сама не займёшся этим?")
+            input("Нажмите Enter.")
+            clear()
+            angel.say(f"Мне не положено ничего делать, зато {'ей можно' if data[2] == 'f' else 'ему можно'}")
+            input("Нажмите Enter.")
+            clear()
+            devil.say(f"Эх...чтож, так и быть, тебе повезло, {data[0]}...")
+            input("Нажмите Enter.")
+            clear()
+            devil.say(f"Ты не идёшь в ад, но учти, если не справишся, то твой путь тебе, думаю, понятен.")
+            input("Нажмите Enter.")
+            clear()
+
+            print("Произашла вспышка, и вы потеряли сознание...")
+            input("Нажмите Enter.")
+            header("Вы проснулись через час после всего, что случилось в том мире.")
+            input("Нажмите Enter.")
+            header(f"Вам предстоит начать новую жизнь, ведь вы теперь {'не та' if data[2] == 'f' else 'не тот'}, кем были.")
+            input("Нажмите Enter.")
+
+            return data
+
+
+    clear()
+
+    player = start()
+    player = Player(player[0], player[2], player[1])
+
+    saveSystem = SaveSystem([player], cityNpc)
+    saveSystem.save()
+
+    # Переход
+    goto("Plane", locs)
+else:
+    player = Player(mainMenu.data[0]['name'], mainMenu.data[0]['gender'], mainMenu.data[0]['race'])
+    for i in cityNpc:
+        for a in mainMenu.data[2]:
+            if i.name == a['name']:
+                for j in cityNpc:
+                    j.inventory = a['inventory']
+                    j.relationList = a['relationList']
+                    j.married = a['married']
+    goto(mainMenu.data[1]['name'])
