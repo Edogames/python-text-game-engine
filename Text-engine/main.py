@@ -604,10 +604,11 @@ class NPC:
             cprint(f"Пол: {self.displayGender}", self.textColor)
             cprint(f"Расса: {self.race}", self.textColor)
             cprint(f"Класс: {self.charType}", self.textColor)
-            if self.married[0] == True:
-                print(f"Замужем с {self.married[1]}.")
-            else:
-                print("Нет пары.")
+            if len(self.married) > 0:
+                if self.married[0] == True:
+                    print(f"Замужем с {self.married[1]}.")
+                else:
+                    print("Нет пары.")
             for i in self.relationList:
                 if i[0] == player.name and i[1] == player.gender:
                     return print(f"Вы для {self.name} как {i[2]}.")
@@ -669,34 +670,59 @@ class NPC:
                 else:
                     break
 
-    def smolTalk(self, player):
-        
+    def smolTalk(self, player, placeName, choice: str = '0'):
+        clear()
+        if choice == '4':
+            self.say(f"Очень приятно познакомиться, {player.name}, я {self.name}, как ты себя чувствуешь?")
+            answ = input('Хорошо[д], Плохо[н]: ')
+            answ = detectChoice(answ)
+            if answ == 'yes':
+                self.say(f"Чтож, хих, я {'рада.' if self.gender == 'f' else 'рад.'}")
+                input("Нажмите Enter.")
+                return self.smolTalk(player, placeName)
+            elif answ == 'no':
+                self.say(f"Оу, мне жаль {player.name}")
+                input("Нажмите Enter.")
+                return self.smolTalk(player, placeName)
+            else:
+                return self.smolTalk(player, placeName, '4')
+        else:
+            self.say(f'О чём хочешь говорить?')
+            choices = Choices([
+                "О тебе",
+                "О чём угодно",
+                "Прекратить разговор",
+            ])
+
+            print(choices.displayChoices())
+            choice = input("Ваш выбор: ")
+
+            if choice == '':
+                clear()
+                return self.smolTalk(player, placeName)
+            elif choice == '1':
+                self.stats(player)
+                input("Нажмите Enter.")
+                return self.smolTalk(player, placeName)
+            elif choice == '2':
+                clear()
+                return self.smolTalk(player, placeName, '4')
+            elif choice == '3':
+                clear()
+                self.say(f"Хорошо, {player.name}, потом, тогда поговорим.")
+                input("Нажмите Enter.")
+                header(f"{self.name} {'улыбнулась и ушла' if self.gender == 'f' else 'улыбнулся и ушёл'}.")
+                input("Нажмите Enter.")
+                return self.endConversation(placeName)
 
     def endConversation(self, placeName: str):
             return goto(placeName)
 
     def conversationWithStranger(self, player: object, placeName: str):
-        self.say(f"Очень приятно познакомиться, {player.name}, я {self.name}, как ты себя чувствуешь?")
-        answ = input('Хорошо[д], Плохо[н]: ')
-        answ = detectChoice(answ)
-        if answ == 'yes':
-            self.say(f"Чтож, хих, я {'рада.' if self.gender == 'f' else 'рад.'}")
-            input("Нажмите Enter.")
-            self.say("Ладно, встретимся позже.")
-            input("Нажмите Enter.")
-            self.addRelationship(player, "знакомый" if player.gender == 'm' else 'знакомая')
-            return self.endConversation(placeName)
-        elif answ == 'no':
-            self.say(f"Оу, мне жаль {player.name}")
-            input("Нажмите Enter.")
-            self.say("Ладно, встретимся позже.")
-            input("Нажмите Enter.")
-            self.addRelationship(player, "знакомый" if player.gender == 'm' else 'знакомая')
-            return self.endConversation(placeName)
-        else:
-            return self.conversationWithStranger(player, placeName)
+        self.addRelationship(player, 'знакомая' if player.gender == 'f' else 'знакомый')
+        return self.smolTalk(player, placeName, '0')
 
-    def startMeet(self, player, placeName):
+    def checkRelationship(self, player, placeName):
         yes = 0
         for i in self.relationList:
             if player.name == i[0]:
@@ -704,6 +730,8 @@ class NPC:
 
         if yes == 0:
             return self.conversationWithStranger(player, placeName)
+        else:
+            return self.smolTalk(player, placeName)
 
     def meet(self, player, placeName, err = False):
         if err == True:
@@ -714,7 +742,7 @@ class NPC:
         choice = input('[д/н]: ')
         choice = detectChoice(choice)
         if choice == 'yes':
-            self.startMeet(player, placeName)
+            self.checkRelationship(player, placeName)
             input("Нажмите Enter")
             return goto(placeName, [])
         elif choice == 'no':
@@ -790,6 +818,7 @@ goddess = [
     NPC("Габриелла", "Ангел", "f", "ангел", True),
 ]
 
+# Не игровые персонажи
 cityNpc = [
     NPC("Линда", "кошка", "f", "житель", True),
     NPC("Лара", "ящерица", "f", "воительница", True),
