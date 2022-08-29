@@ -10,12 +10,13 @@ pygame.init()
 pygame.mixer.init()
 
 class SaveSystem:
-    def __init__(self, player: list[object] = [], location: str = "", npc: list = []):
+    def __init__(self, player: list[object] = [], location: str = "", npc: list[object] = []):
         if len(player) > 0:
             self.player = player[0]
         self.npc = npc
         self.location = location
         self.save_data = []
+        self.data = None
 
     def save(self):
         self.save_data = [
@@ -30,36 +31,29 @@ class SaveSystem:
             },
         ]
 
-        newNpcArr = []
         if len(self.npc) > 0:
+            newNpcArr = []
             for i in self.npc:
                 newArr = {
-                    'name': i.name,
-                    'race': i.race,
-                    'gender': i.gender,
-                    'type': i.type,
-                    'gay': i.gay,
-                    'married': i.married,
-                    'relationList': i.relationList,
-                    'inventory': i.inventory,
+                    'name': i['name'],
+                    'married': i['married'],
+                    'relationList': i['relationList'],
+                    'inventory': i['inventory'],
                 }
                 newNpcArr.append(newArr)
             self.save_data.append(newNpcArr)
 
-        data = json.dumps(self.save_data, ensure_ascii=False)
+        self.data = json.dumps(self.save_data, default = lambda x: x.__dict__, ensure_ascii=False)
 
         jsonFile = open('save.json', 'w')
 
-        jsonFile.write(data)
+        jsonFile.write(self.data)
         return jsonFile.close()
 
     def load(self):
         if os.path.exists('save.json'):
             with open('save.json', 'r') as f:
                 objs = json.loads(f.read())
-                print(objs)
-                print(type(objs))
-                input()
                 return objs
         else:
             warning("Нет сохранений!")
@@ -133,7 +127,7 @@ class MainMenu:
         elif choice == '1':
             return self.data
         elif choice == '2':
-            self.data = self.saveSystem
+            self.data = self.saveSystem.load()
             if self.data != False:
                 return self.data
             else:
@@ -297,18 +291,13 @@ class Location:
         maxChance = self.peopleChance * 10
         chance = random.randint(0, maxChance)
 
-        citizens = []
-
-        if len(self.entities) > 0:
-            for i in self.entities:
-                if type(i) == NPC:
-                    citizens.append(i)
-        else:
+        if len(self.entities) == 0:
             header("Тут никаго.")
             input("Нажмите Enter.")
             return False
 
-        person = random.choice(citizens)
+        person = random.choice(self.entities)
+        person = random.choice(person)
 
         if chance > maxChance / 2:
             header("Начало встречи.")
@@ -329,7 +318,16 @@ class Location:
 
     def start(self, locs: list[object], player: object, choice: str = '0', confSnd: bool = False, denSnd: bool = False):
         if len(self.entities) > 0:
-            saveSystem = SaveSystem([player], self.name, [self.entities[0]])
+            newArr = []
+            for i in self.entities[0]:
+                newDict = {
+                    'name': i.name,
+                    'married': i.married,
+                    'relationList': i.relationList,
+                    'inventory': i.inventory,
+                }
+                newArr.append(newDict)
+            saveSystem = SaveSystem([player], self.name, newArr)
             saveSystem.save()
         else:
             saveSystem = SaveSystem([player], self.name)
@@ -406,11 +404,11 @@ class Location:
             elif choice == 0:
                 return self.start(locs, player, '0', False, True)
         elif choice == '4':
-            persone = self.getPerson()
-            if persone == False:
+            person = self.getPerson()
+            if person == False:
                 return self.start(locs, player, '0', False, True)
             else:
-                persone.meet(player, self.name)
+                person.meet(player, self.name)
 
 # Предмет
 class Item:
@@ -572,11 +570,11 @@ class Player:
 
 # Не игровой персонаж
 class NPC:
-    def __init__(self, name: str, race: str, gender: str, type: str, gay: bool, married: list[str, str] = ["", ""]):
+    def __init__(self, name: str, race: str, gender: str, charType: str, gay: bool, married: list = []):
         self.name = name
         self.race = race
         self.gender = gender
-        self.type = type
+        self.charType = charType
         self.gay = gay
 
         self.lvl = 1
@@ -605,7 +603,7 @@ class NPC:
             cprint(f"Имя: {self.name}", self.textColor)
             cprint(f"Пол: {self.displayGender}", self.textColor)
             cprint(f"Расса: {self.race}", self.textColor)
-            cprint(f"Класс: {self.type}", self.textColor)
+            cprint(f"Класс: {self.charType}", self.textColor)
             if self.married[0] == True:
                 print(f"Замужем с {self.married[1]}.")
             else:
@@ -671,25 +669,29 @@ class NPC:
                 else:
                     break
 
+    def smolTalk(self, player):
+        
+
     def endConversation(self, placeName: str):
             return goto(placeName)
 
     def conversationWithStranger(self, player: object, placeName: str):
         self.say(f"Очень приятно познакомиться, {player.name}, я {self.name}, как ты себя чувствуешь?")
-        self.relationList.append([player.name, 'Знакомая' if player.gender == 'f' else 'Знакомый'])
         answ = input('Хорошо[д], Плохо[н]: ')
         answ = detectChoice(answ)
         if answ == 'yes':
-            self.say("Чтож, хих, я " + "рада." if self.gender == 'f' else "рад.")
+            self.say(f"Чтож, хих, я {'рада.' if self.gender == 'f' else 'рад.'}")
             input("Нажмите Enter.")
             self.say("Ладно, встретимся позже.")
             input("Нажмите Enter.")
+            self.addRelationship(player, "знакомый" if player.gender == 'm' else 'знакомая')
             return self.endConversation(placeName)
         elif answ == 'no':
             self.say(f"Оу, мне жаль {player.name}")
             input("Нажмите Enter.")
             self.say("Ладно, встретимся позже.")
             input("Нажмите Enter.")
+            self.addRelationship(player, "знакомый" if player.gender == 'm' else 'знакомая')
             return self.endConversation(placeName)
         else:
             return self.conversationWithStranger(player, placeName)
@@ -809,10 +811,9 @@ player = []
 # Начало
 mainMenu.mainMenuScreen()
 
-print(mainMenu.data)
-input()
+data = mainMenu.data
 
-if mainMenu.data == True:
+if data == True:
     def start(checkRace: bool = False, checkGender: bool = False, err: bool = False, data: list = [], dialogue: bool = False, done: bool = False):
         clear()
 
@@ -906,12 +907,13 @@ if mainMenu.data == True:
     # Переход
     goto("Plane", locs)
 else:
-    player = Player(mainMenu.data[0]['name'], mainMenu.data[0]['gender'], mainMenu.data[0]['race'])
-    for i in cityNpc:
-        for a in mainMenu.data[2]:
-            if i.name == a['name']:
-                for j in cityNpc:
-                    j.inventory = a['inventory']
-                    j.relationList = a['relationList']
-                    j.married = a['married']
-    goto(mainMenu.data[1]['name'])
+    player = Player(data[0]['name'], data[0]['gender'], data[0]['race'])
+    if len(data) > 2:
+        for i in cityNpc:
+            for a in data[2]:
+                if i.name == a['name']:
+                    for j in cityNpc:
+                        j.inventory = a['inventory']
+                        j.relationList = a['relationList']
+                        j.married = a['married']
+    goto(data[1]['name'])
