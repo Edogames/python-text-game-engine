@@ -109,7 +109,7 @@ class MainMenu:
 
         return self.mainMenuScreen()
 
-    def playBtn(self):
+    def playBtn(self, choice = '0'):
         clear()
         choices = Choices([
             "Начать новую игру",
@@ -125,7 +125,20 @@ class MainMenu:
         elif choice == '3':
             return self.mainMenuScreen()
         elif choice == '1':
-            return self.data
+            warning("Эта опция может удалить ваши сохранения!")
+            warning("Вы уверены?")
+            choices = Choices([
+                "Да",
+                "Нет",
+            ])
+            print(choices.displayChoices())
+            choice = input("Ваш выбор: ")
+            if choice == '':
+                return self.playBtn('1')
+            elif choice == '1':
+                return self.data
+            elif choice == '2':
+                return self.mainMenuScreen()
         elif choice == '2':
             self.data = self.saveSystem.load()
             if self.data != False:
@@ -594,7 +607,7 @@ class NPC:
             self.displayGender = "Мужской"
 
     def addRelationship(self, target: object, relType: str):
-        self.relationList.append([target.name, target.gender, relType])
+        self.relationList.append([target.name, relType])
 
     def stats(self, player: object):
         if self.health > 0:
@@ -826,7 +839,7 @@ cityNpc = [
 
 # Локации
 locs = [
-    Location("Plane", "Равнина", 0, 0, 0, True, [], "Просто равнина.", ['Plane2']),
+    Location("Plane", "Равнина", 0, 0, 0, True, [], "Просто равнина.", ['City']),
     Location("Plane2", "Не равнина", 0, 0, 0, True, [], "Это не равнина.", ['City']),
     Location("City", "Город", 20, 10, 10, True, [cityNpc], "Жилой Город.", ['Plane', 'Plane2']),
 ]
