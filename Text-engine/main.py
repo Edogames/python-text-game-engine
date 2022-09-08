@@ -246,7 +246,7 @@ def clear():
 
 # Локации
 class Location:
-    def __init__(self, name: str, displayName: str, monsterChance: int, lootChance: int, peopleChance: int, available: bool = True, entities = [], description: str = "", availFrom = []):
+    def __init__(self, name, displayName, monsterChance, lootChance, peopleChance, available = True, entities = [], description = "", availFrom = []):
         self.name = name
         self.displayName = displayName
         self.monsterChance = monsterChance
@@ -282,11 +282,6 @@ class Location:
         cprint(f"Шанс нападение монстров: {self.monsterChance}", monColor)
         cprint(f"Шанс выпадение предметов: {self.monsterChance}", lootColor)
 
-    def goto(self, name: str, locations):
-        header("Ждите...")
-        time.sleep(0.5)
-        return goto(name, locations)
-
     def getLocs(self, locations):
         availableLocs = []
 
@@ -296,7 +291,7 @@ class Location:
 
         return availableLocs
 
-    def getLoc(self, num: int):
+    def getLoc(self, num):
         initLocs = self.getLocs()
         return initLocs[num - 1].name
 
@@ -329,7 +324,7 @@ class Location:
             num += 1
             text += f"{num} - {i.displayName}"
 
-    def start(self, locs, player, choice: str = '0', confSnd: bool = False, denSnd: bool = False):
+    def start(self, locs, player, choice = '0', confSnd = False, denSnd = False):
         if len(self.entities) > 0:
             newArr = []
             for i in self.entities[0]:
@@ -349,15 +344,15 @@ class Location:
         clear()
         if choice == '0' or choice == '':
             if confSnd == True:
-                self.confirmSound.play()
+                # self.confirmSound.play()
                 header(f"Вы находитесь в {self.displayName}", False)
 
             if confSnd == False and denSnd == False:
-                self.tpSound.play()
+                # self.tpSound.play()
                 header(f"Вы находитесь в {self.displayName}")
 
             if denSnd == True:
-                self.denySound.play()
+                # self.denySound.play()
                 header(f"Вы находитесь в {self.displayName}", False)
 
 
@@ -425,7 +420,7 @@ class Location:
 
 # Предмет
 class Item:
-    def __init__(self, name: str, count: int, use: str, description: str = ""):
+    def __init__(self, name, count, use, description = ""):
         self.name = name
         self.count = count
         self.use = use
@@ -438,7 +433,7 @@ class Item:
 
 # Лечилка
 class Heal:
-    def __init__(self, name: str, dispName: str, heal: int, count: int, description: str):
+    def __init__(self, name, dispName, heal, count, description):
         self.name = name
         self.dispName = dispName
         self.heal = heal
@@ -448,7 +443,7 @@ class Heal:
         self.useSound = pygame.mixer.Sound('Sounds/Player/Heal.wav')
         self.statsSound = pygame.mixer.Sound('Sounds/Menus/Confirm.wav')
 
-    def use(self, target: object):
+    def use(self, target):
         self.useSound.play()
         return target.health + self.heal
 
@@ -461,18 +456,18 @@ class Heal:
 
 # Еда
 class Food:
-    def __init__(self, name: str, hunger: int, description: str):
+    def __init__(self, name, hunger, description):
         self.name = name
         self.hunger = hunger
         self.description = description
 
-    def use(self, target: object):
+    def use(self, target):
         header(f"Вы использовали {self.name} на {target.name}.")
         return target.stamina + self.hunger
 
 # Игрок
 class Player:
-    def __init__(self, name: str, gender: str, race: str):
+    def __init__(self, name, gender, race):
         # Get a name for character
         if name == "":
             self.name = os.getlogin()
@@ -483,12 +478,14 @@ class Player:
         self.married = False
         self.armor = False
 
+        gender = getGender(gender)
+
         # For better text
-        if gender == "female" or gender == "Female" or gender == 'f' or gender == 'F' or gender == 'ж' or gender == 'Ж':
+        if gender == "f":
             self.textColor = "magenta"
             self.gender = "f"
             self.displayGender = "Женский"
-        elif gender == "male" or gender == "Male" or gender == 'm' or gender == 'M' or gender == 'м' or gender == 'М':
+        elif gender == "m":
             self.textColor = "green"
             self.gender = "m"
             self.displayGender = "Мужской"
@@ -504,7 +501,7 @@ class Player:
 
         self.inventory = []
 
-        self.confirmSound = pygame.mixer.Sound('Sounds/Menus/Confirm.wav')
+        # self.confirmSound = pygame.mixer.Sound('Sounds/Menus/Confirm.wav')
 
     def stats(self):
         self.confirmSound.play()
@@ -516,7 +513,7 @@ class Player:
 
     def showInv(self):
         if len(self.inventory) > 0:
-            self.confirmSound.play()
+            # self.confirmSound.play()
             header("Инвентарь")
             for i in self.inventory:
                 i.stats()
@@ -536,22 +533,22 @@ class Player:
         data.append(newList)
         return self.choose(data)
     
-    def choose(self, data: list):
+    def choose(self, data):
         self.say("Что же мне выбрать?")
         data[1]
 
-    def say(self, text: str):
+    def say(self, text):
         text = splitText(text)
         cprint(f'{self.name}: {text}', self.textColor)
 
-    def addToInv(self, item: object):
+    def addToInv(self, item):
         for i in self.inventory:
             if i.name == item.name:
                 return self.plusToInv(i)
         header(f"К вам добавилось {item.name} {item.count} шт.")
         return self.inventory.append(item)
 
-    def plusToInv(self, item: object):
+    def plusToInv(self, item):
         for i in self.inventory:
             if i.name == item.name:
                 i.count += item.count
@@ -564,7 +561,7 @@ class Player:
         self.inventory = []
         return self.inventory
     
-    def minusFromInv(self, item: object):
+    def minusFromInv(self, item):
         header(f"С вас отняли {item.name} {item.count} шт.")
         for i in self.inventory:
             if i.name == item.name:
@@ -575,15 +572,15 @@ class Player:
                 else:
                     break
 
-    def takeDMG(self, amount: int):
+    def takeDMG(self, amount):
         return self.health - amount
 
-    def heal(self, amount: int):
+    def heal(self, amount):
         return self.health + amount
 
 # Не игровой персонаж
 class NPC:
-    def __init__(self, name: str, race: str, gender: str, charType: str, gay: bool, married: list = []):
+    def __init__(self, name, race, gender, charType, gay, married = []):
         self.name = name
         self.race = race
         self.gender = gender
@@ -606,10 +603,10 @@ class NPC:
             self.textColor = "green"
             self.displayGender = "Мужской"
 
-    def addRelationship(self, target: object, relType: str):
+    def addRelationship(self, target, relType):
         self.relationList.append([target.name, relType])
 
-    def stats(self, player: object):
+    def stats(self, player):
         if self.health > 0:
             cprint(f"Уровень: {self.lvl}", self.textColor)
             cprint(f"Здоровье: {self.health}")
@@ -644,7 +641,7 @@ class NPC:
         else:
             self.say("У меня ничего нет...")
 
-    def addToInv(self, item: object, alert: bool = True):
+    def addToInv(self, item, alert = True):
         for i in self.inventory:
             if i.name == item.name:
                 return self.plusToInv(i, alert)
@@ -652,7 +649,7 @@ class NPC:
             header(f"К '{self.name}' добавилось {item.name} {item.count} шт.")
         return self.inventory.append(item)
 
-    def plusToInv(self, item: object, alert: bool = True):
+    def plusToInv(self, item, alert = True):
         if alert == True:
             if self.gender == "f":
                 header(f"{self.name} получила {item.name} {item.count} шт.")
@@ -665,13 +662,13 @@ class NPC:
                 return i
         return self.addToInv(item)
 
-    def clearInv(self, alert: bool = True):
+    def clearInv(self, alert = True):
         self.inventory = []
         if alert == True:
             header(f"Инвентарь {self.name} очищен")
         return self.inventory
 
-    def minusFromInv(self, item: object, alert: bool = True):
+    def minusFromInv(self, item, alert = True):
         if alert == True:
             header(f"С {self.name} отняли {item.name} {item.count} шт.")
         for i in self.inventory:
@@ -683,7 +680,7 @@ class NPC:
                 else:
                     break
 
-    def smolTalk(self, player, placeName, choice: str = '0'):
+    def smolTalk(self, player, placeName, choice = '0'):
         clear()
         if choice == '4':
             self.say(f"Очень приятно познакомиться, {player.name}, я {self.name}, как ты себя чувствуешь?")
@@ -728,10 +725,10 @@ class NPC:
                 input("Нажмите Enter.")
                 return self.endConversation(placeName)
 
-    def endConversation(self, placeName: str):
+    def endConversation(self, placeName):
             return goto(placeName)
 
-    def conversationWithStranger(self, player: object, placeName: str):
+    def conversationWithStranger(self, player, placeName):
         self.addRelationship(player, 'знакомая' if player.gender == 'f' else 'знакомый')
         return self.smolTalk(player, placeName, '0')
 
@@ -767,7 +764,7 @@ class NPC:
 
 # Враг/монстр
 class Monster:
-    def __init__(self, race: str, gender: str, dmgPoint: int, maxHealth: int, place: str):
+    def __init__(self, race, gender, dmgPoint, maxHealth, place):
         self.race = race
         self.gender = gender
         self.place = place
@@ -777,15 +774,15 @@ class Monster:
         self.defeat = False
         self.health = 100
 
-        self.hitSound = pygame.mixer.Sound('Sounds/Player/Hit.wav')
+        # self.hitSound = pygame.mixer.Sound('Sounds/Player/Hit.wav')
 
-    def takeDMG(self, amount: int):
+    def takeDMG(self, amount):
         self.health -= amount
         return self.checkHealth()
 
-    def doDMG(self, target: object):
+    def doDMG(self, target):
         warning(f"{self.race} атакует {target.name}!")
-        self.hitSound.play()
+        # self.hitSound.play()
         target.health -= self.dmgPoint
 
     def death(self):
@@ -799,7 +796,7 @@ class Monster:
             self.health = self.maxHealth
             return self.health
 
-    def say(self, text: str):
+    def say(self, text):
         text = splitText(text)
         cprint(f"{self.race}: {text}", 'red')
 
@@ -816,13 +813,15 @@ def getRace():
     return value
 
 # Идти в
-def goto(locName: str, locations = []):
+def goto(locName, locations = []):
     if locations == []:
         locations = locs
 
     for i in locations:
         if i.name == locName:
             newLoc = i
+            header("Ждите...")
+            time.sleep(0.5)
             return newLoc.start(locations, player, '0', False, False)
 
 # Не играбельное божество
@@ -856,7 +855,7 @@ mainMenu.mainMenuScreen()
 data = mainMenu.data
 
 if data == True:
-    def start(checkRace: bool = False, checkGender: bool = False, err: bool = False, data: list = [], dialogue: bool = False, done: bool = False):
+    def start(checkRace = False, checkGender = False, err = False, data = [], dialogue = False, done = False):
         clear()
 
         if checkRace == False and checkGender == False and dialogue == False:
