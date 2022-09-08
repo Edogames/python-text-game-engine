@@ -10,7 +10,7 @@ pygame.init()
 pygame.mixer.init()
 
 class SaveSystem:
-    def __init__(self, player: list[object] = [], location: str = "", npc: list[object] = []):
+    def __init__(self, player = [], location: str = "", npc = []):
         if len(player) > 0:
             self.player = player[0]
         self.npc = npc
@@ -61,7 +61,7 @@ class SaveSystem:
 
 # Текст выбора
 class Choices:
-    def __init__(self, choices: list[str] = []):
+    def __init__(self, choices = []):
         self.choices = choices
 
     def displayChoices(self):
@@ -246,7 +246,7 @@ def clear():
 
 # Локации
 class Location:
-    def __init__(self, name: str, displayName: str, monsterChance: int, lootChance: int, peopleChance: int, available: bool = True, entities: list[object] = [], description: str = "", availFrom: list[str] = []):
+    def __init__(self, name: str, displayName: str, monsterChance: int, lootChance: int, peopleChance: int, available: bool = True, entities = [], description: str = "", availFrom = []):
         self.name = name
         self.displayName = displayName
         self.monsterChance = monsterChance
@@ -260,9 +260,9 @@ class Location:
 
         self.available = available
 
-        self.tpSound = pygame.mixer.Sound('Sounds/Player/Teleport.wav')
-        self.confirmSound = pygame.mixer.Sound('Sounds/Menus/Confirm.wav')
-        self.denySound = pygame.mixer.Sound('Sounds/Menus/Denied.wav')
+        # self.tpSound = pygame.mixer.Sound('/Sounds/Player/Teleport.wav')
+        # self.confirmSound = pygame.mixer.Sound('/Sounds/Menus/Confirm.wav')
+        # self.denySound = pygame.mixer.Sound('/Sounds/Menus/Denied.wav')
 
     def stats(self):
         print(f"Имя местности: {self.displayName}")
@@ -282,12 +282,12 @@ class Location:
         cprint(f"Шанс нападение монстров: {self.monsterChance}", monColor)
         cprint(f"Шанс выпадение предметов: {self.monsterChance}", lootColor)
 
-    def goto(self, name: str, locations: list[object]):
+    def goto(self, name: str, locations):
         header("Ждите...")
         time.sleep(0.5)
         return goto(name, locations)
 
-    def getLocs(self, locations: list[object]):
+    def getLocs(self, locations):
         availableLocs = []
 
         for i in locations:
@@ -321,7 +321,7 @@ class Location:
             input("Нажмите Enter.")
             return False
 
-    def showMap(self, locations: list[object]):
+    def showMap(self, locations):
         text = ""
         num = 0
 
@@ -329,7 +329,7 @@ class Location:
             num += 1
             text += f"{num} - {i.displayName}"
 
-    def start(self, locs: list[object], player: object, choice: str = '0', confSnd: bool = False, denSnd: bool = False):
+    def start(self, locs, player, choice: str = '0', confSnd: bool = False, denSnd: bool = False):
         if len(self.entities) > 0:
             newArr = []
             for i in self.entities[0]:
@@ -816,7 +816,7 @@ def getRace():
     return value
 
 # Идти в
-def goto(locName: str, locations: list[object] = []):
+def goto(locName: str, locations = []):
     if locations == []:
         locations = locs
 
