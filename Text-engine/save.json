@@ -1,0 +1,11 @@
+[
+    {
+        "name": "User",
+        "gender": "m",
+        "race": "wsb",
+        "inventory": []
+    },
+    {
+        "name": "Plane"
+    }
+]

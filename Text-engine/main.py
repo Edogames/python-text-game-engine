@@ -43,11 +43,9 @@ class SaveSystem:
                 newNpcArr.append(newArr)
             self.save_data.append(newNpcArr)
 
-        self.data = json.dumps(self.save_data, default = lambda x: x.__dict__, ensure_ascii=False)
+        with open('save.json', 'w', encoding='utf-8') as jsonFile:
+            json.dump(self.save_data, jsonFile, ensure_ascii=False, indent=4, default = lambda x: x.__dict__)
 
-        jsonFile = open('save.json', 'w')
-
-        jsonFile.write(self.data)
         return jsonFile.close()
 
     def load(self):
@@ -260,9 +258,9 @@ class Location:
 
         self.available = available
 
-        # self.tpSound = pygame.mixer.Sound('/Sounds/Player/Teleport.wav')
-        # self.confirmSound = pygame.mixer.Sound('/Sounds/Menus/Confirm.wav')
-        # self.denySound = pygame.mixer.Sound('/Sounds/Menus/Denied.wav')
+        self.tpSound = pygame.mixer.Sound('Sounds/Player/Teleport.wav')
+        self.confirmSound = pygame.mixer.Sound('Sounds/Menus/Confirm.wav')
+        self.denySound = pygame.mixer.Sound('Sounds/Menus/Denied.wav')
 
     def stats(self):
         print(f"Имя местности: {self.displayName}")
@@ -344,15 +342,15 @@ class Location:
         clear()
         if choice == '0' or choice == '':
             if confSnd == True:
-                # self.confirmSound.play()
+                self.confirmSound.play()
                 header(f"Вы находитесь в {self.displayName}", False)
 
             if confSnd == False and denSnd == False:
-                # self.tpSound.play()
+                self.tpSound.play()
                 header(f"Вы находитесь в {self.displayName}")
 
             if denSnd == True:
-                # self.denySound.play()
+                self.denySound.play()
                 header(f"Вы находитесь в {self.displayName}", False)
 
 
@@ -360,6 +358,7 @@ class Location:
                 "Идти",
                 "О местности",
                 "Игрок",
+                "Инвентарь",
                 "Поговорить",
             ])
 
@@ -412,6 +411,10 @@ class Location:
             elif choice == 0:
                 return self.start(locs, player, '0', False, True)
         elif choice == '4':
+            player.showInv()
+            input("Нажмите Enter что бы продолжить...")
+            return self.start(locs, player, '0', True, False)
+        elif choice == '5':
             person = self.getPerson()
             if person == False:
                 return self.start(locs, player, '0', False, True)
@@ -478,7 +481,7 @@ class Player:
         self.married = False
         self.armor = False
 
-        gender = getGender(gender)
+        gender = detectGender(gender)
 
         # For better text
         if gender == "f":
@@ -501,7 +504,7 @@ class Player:
 
         self.inventory = []
 
-        # self.confirmSound = pygame.mixer.Sound('Sounds/Menus/Confirm.wav')
+        self.confirmSound = pygame.mixer.Sound('Sounds/Menus/Confirm.wav')
 
     def stats(self):
         self.confirmSound.play()
@@ -513,7 +516,7 @@ class Player:
 
     def showInv(self):
         if len(self.inventory) > 0:
-            # self.confirmSound.play()
+            self.confirmSound.play()
             header("Инвентарь")
             for i in self.inventory:
                 i.stats()
@@ -774,7 +777,7 @@ class Monster:
         self.defeat = False
         self.health = 100
 
-        # self.hitSound = pygame.mixer.Sound('Sounds/Player/Hit.wav')
+        self.hitSound = pygame.mixer.Sound('Sounds/Player/Hit.wav')
 
     def takeDMG(self, amount):
         self.health -= amount
@@ -782,7 +785,7 @@ class Monster:
 
     def doDMG(self, target):
         warning(f"{self.race} атакует {target.name}!")
-        # self.hitSound.play()
+        self.hitSound.play()
         target.health -= self.dmgPoint
 
     def death(self):
