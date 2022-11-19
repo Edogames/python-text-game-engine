@@ -45,12 +45,13 @@ class SaveSystem:
         return jsonFile.close()
 
     def load(self):
-        if os.path.exists('save.json'):
+        if os.path.exists('save.json') and os.stat('save.json').st_size > 0:
             with open('save.json', 'r') as f:
                 objs = json.loads(f.read())
                 return objs
         else:
-            warning("Нет сохранений!")
+            warning("Нет сохранений, либо файл пустой.")
+            warning("Начните новую игру, что бы эта функция сработала.")
             return False
 
 # Текст выбора
