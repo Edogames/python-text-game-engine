@@ -1,11 +1,11 @@
 [
     {
-        "name": "User",
-        "gender": "m",
-        "race": "wsb",
+        "name": "Edgar",
+        "gender": "f",
+        "race": "Ñ‡ÐµÐ»Ð¾Ð²ÐµÐº",
         "inventory": []
     },
     {
-        "name": "Plane"
+        "name": "Plane2"
     }
 ]

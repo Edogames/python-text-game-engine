@@ -3,11 +3,7 @@ from termcolor import colored, cprint
 import time
 import os
 import random
-import pygame
 import json
-
-pygame.init()
-pygame.mixer.init()
 
 class SaveSystem:
     def __init__(self, player = [], location: str = "", npc = []):
@@ -258,10 +254,6 @@ class Location:
 
         self.available = available
 
-        self.tpSound = pygame.mixer.Sound('Sounds/Player/Teleport.wav')
-        self.confirmSound = pygame.mixer.Sound('Sounds/Menus/Confirm.wav')
-        self.denySound = pygame.mixer.Sound('Sounds/Menus/Denied.wav')
-
     def stats(self):
         print(f"Имя местности: {self.displayName}")
         if self.description != "":
@@ -342,15 +334,12 @@ class Location:
         clear()
         if choice == '0' or choice == '':
             if confSnd == True:
-                self.confirmSound.play()
                 header(f"Вы находитесь в {self.displayName}", False)
 
             if confSnd == False and denSnd == False:
-                self.tpSound.play()
                 header(f"Вы находитесь в {self.displayName}")
 
             if denSnd == True:
-                self.denySound.play()
                 header(f"Вы находитесь в {self.displayName}", False)
 
 
@@ -367,7 +356,6 @@ class Location:
         if choice == '0' or choice == "":
             return self.start(locs, player, '0', False, True)
         elif choice == '1':
-            self.confirmSound.play()
             clear()
             player.say("Куда же мне идти?")
             text = ""
@@ -390,7 +378,6 @@ class Location:
                 return self.start(locs, player, '1', False, True)
             return goto(availLocs[int(num) - 1].name, locs)
         elif choice == '2':
-            self.confirmSound.play()
             clear()
             self.stats()
             input("Нажмите Enter что бы продолжить...")
@@ -443,15 +430,10 @@ class Heal:
         self.count = count
         self.description = description
 
-        self.useSound = pygame.mixer.Sound('Sounds/Player/Heal.wav')
-        self.statsSound = pygame.mixer.Sound('Sounds/Menus/Confirm.wav')
-
     def use(self, target):
-        self.useSound.play()
         return target.health + self.heal
 
     def stats(self):
-        self.statsSound.play()
         print(f"{colored('|Имя', 'cyan')}: {self.dispName}")
         print(f"{colored('|Описание', 'cyan')}: {self.description}")
         print(f"{colored('|Количество', 'cyan')}: {self.count}")
@@ -504,10 +486,7 @@ class Player:
 
         self.inventory = []
 
-        self.confirmSound = pygame.mixer.Sound('Sounds/Menus/Confirm.wav')
-
     def stats(self):
-        self.confirmSound.play()
         cprint(f"Уровень: {self.lvl}", self.textColor)
         cprint(f"Имя: {self.name}", self.textColor)
         cprint(f"Пол: {self.displayGender}", self.textColor)
@@ -516,7 +495,6 @@ class Player:
 
     def showInv(self):
         if len(self.inventory) > 0:
-            self.confirmSound.play()
             header("Инвентарь")
             for i in self.inventory:
                 i.stats()
@@ -777,15 +755,12 @@ class Monster:
         self.defeat = False
         self.health = 100
 
-        self.hitSound = pygame.mixer.Sound('Sounds/Player/Hit.wav')
-
     def takeDMG(self, amount):
         self.health -= amount
         return self.checkHealth()
 
     def doDMG(self, target):
         warning(f"{self.race} атакует {target.name}!")
-        self.hitSound.play()
         target.health -= self.dmgPoint
 
     def death(self):
