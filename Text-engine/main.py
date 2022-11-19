@@ -45,12 +45,17 @@ class SaveSystem:
         return jsonFile.close()
 
     def load(self):
-        if os.path.exists('save.json') and os.stat('save.json').st_size > 0:
-            with open('save.json', 'r') as f:
-                objs = json.loads(f.read())
-                return objs
+        if os.path.exists('save.json'):
+            if os.stat('save.json').st_size > 0:
+                with open('save.json', 'r') as f:
+                    objs = json.loads(f.read())
+                    return objs
+            else:
+                warning("Файл сохранений - пустой!")
+                warning("Начните новую игру, что бы эта функция сработала.")
+                return False
         else:
-            warning("Нет сохранений, либо файл пустой.")
+            warning("Нет сохранений!")
             warning("Начните новую игру, что бы эта функция сработала.")
             return False
 
@@ -75,6 +80,7 @@ class MainMenu:
         self.wrdLimit = wrdLimit
         self.saveSystem = SaveSystem()
         self.data = True
+        self.language = 'ru'
 
     def options(self):
         clear()
@@ -833,7 +839,7 @@ mainMenu.mainMenuScreen()
 
 data = mainMenu.data
 
-if data == True:
+if type(data) not in (tuple, list):
     def start(checkRace = False, checkGender = False, err = False, data = [], dialogue = False, done = False):
         clear()
 
