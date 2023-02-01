@@ -40,7 +40,7 @@ class SaveSystem:
             self.save_data.append(newNpcArr)
 
         with open('save.json', 'w', encoding='utf-8') as jsonFile:
-            json.dump(self.save_data, jsonFile, ensure_ascii=False, indent=4, default = lambda x: x.__dict__)
+            json.dump(self.save_data, jsonFile, ensure_ascii=True, indent=4, default = lambda x: x.__dict__)
 
         return jsonFile.close()
 
@@ -247,8 +247,9 @@ def clear():
 
 # Локации
 class Location:
-    def __init__(self, name, displayName, monsterChance, lootChance, peopleChance, available = True, entities = [], description = "", availFrom = []):
+    def __init__(self, name, displayName, monsterChance, lootChance, peopleChance, available = True, entities = [], description = "", availFrom = [], items = []):
         self.name = name
+        self.items = items
         self.displayName = displayName
         self.monsterChance = monsterChance
         self.lootChance = lootChance
@@ -287,6 +288,26 @@ class Location:
                 availableLocs.append(i)
 
         return availableLocs
+
+    def getItem(self, target):
+        maxChance = self.lootChance * 10
+        chance = random.randint(0, maxChance)
+        if len(self.items) > 0 and chance > maxChance / 2:
+            item = random.choice(self.items)
+            header(f"Вы нашли: {item['dispName']}!")
+            header(f"Хотите забрать?")
+            choice = str(input())
+            choice = detectChoice(choice)
+            if(choice == 'yes'):
+                target.addToInv(item)
+                input("Нажмите Enter что бы продолжить...")
+                return self.start(locs, target, '0', True, False)
+            else:
+                return self.start(locs, target, '0', False, True)
+        else:
+            header("Ничего не нашлось...")
+            input("Нажмите Enter что бы продолжить...")
+            return self.start(locs, target, '0', False, True)
 
     def getLoc(self, num):
         initLocs = self.getLocs()
@@ -356,6 +377,7 @@ class Location:
                 "Игрок",
                 "Инвентарь",
                 "Поговорить",
+                "Осмотрется",
             ])
 
             print(selection.displayChoices())
@@ -414,52 +436,12 @@ class Location:
                 return self.start(locs, player, '0', False, True)
             else:
                 person.meet(player, self.name)
-
-# Предмет
-class Item:
-    def __init__(self, name, count, use, description = ""):
-        self.name = name
-        self.count = count
-        self.use = use
-        self.description = description
-
-    def stats(self):
-        print(f"{colored('|Имя', 'cyan')} -> {colored(self.name, 'cyan')}")
-        print(f"{colored('|Количество', 'cyan')} -> {colored(self.count, 'cyan')}")
-        return print(f"{colored('|__________________', 'cyan')}")
-
-# Лечилка
-class Heal:
-    def __init__(self, name, dispName, heal, count, description):
-        self.name = name
-        self.dispName = dispName
-        self.heal = heal
-        self.count = count
-        self.description = description
-
-    def use(self, target):
-        return target.health + self.heal
-
-    def stats(self):
-        print(f"{colored('|Имя', 'cyan')}: {self.dispName}")
-        print(f"{colored('|Описание', 'cyan')}: {self.description}")
-        print(f"{colored('|Количество', 'cyan')}: {self.count}")
-        return print(f"{colored('|__________________', 'cyan')}")
-
-# Еда
-class Food:
-    def __init__(self, name, hunger, description):
-        self.name = name
-        self.hunger = hunger
-        self.description = description
-
-    def use(self, target):
-        header(f"Вы использовали {self.name} на {target.name}.")
-        return target.stamina + self.hunger
+        elif choice == '6':
+            return self.getItem(player)
 
 # Игрок
 class Player:
-    def __init__(self, name, gender, race):
+    def __init__(self, name, gender, race, inventory=[]):
         # Get a name for character
         if name == "":
             self.name = os.getlogin()
@@ -491,7 +473,7 @@ class Player:
 
         self.race = race
 
-        self.inventory = []
+        self.inventory = inventory
 
     def stats(self):
         cprint(f"Уровень: {self.lvl}", self.textColor)
@@ -504,22 +486,43 @@ class Player:
         if len(self.inventory) > 0:
             header("Инвентарь")
             for i in self.inventory:
-                i.stats()
+                if 'heal' in i:
+                    print(f"{colored('|Имя', 'cyan')}: {colored(i['dispName'], 'green')}")
+                    print(f"{colored('|Здоровие', 'cyan')}: {colored(i['heal'], 'green')}")
+                    print(f"{colored('|Описание', 'cyan')}: {i['description']}")
+                    print(f"{colored('|Количество', 'cyan')}: {colored(i['count'], 'green')}")
+                    print(f"{colored('|__________________', 'cyan')}")
+                elif 'use' in i:
+                    print(f"{colored('|Имя', 'cyan')}: {colored(i['dispName'], 'yellow')}")
+                    if i['use'] == None:
+                        print(f"{colored('|Нельзя нигде использовать.', 'cyan')}")
+                    else:
+                        print(f"{colored('|Имя', 'cyan')}: {colored(i['use'], 'yellow')}")
+                    print(f"{colored('|Описание', 'cyan')}: {i['description']}")
+                    print(f"{colored('|Количество', 'cyan')}: {colored(i['count'], 'yellow')}")
+                    print(f"{colored('|__________________', 'cyan')}")
+                elif 'hunger' in i:
+                    print(f"{colored('|Имя', 'cyan')}: {colored(i['dispName'], 'blue')}")
+                    print(f"{colored('|Голод', 'cyan')}: {colored(i['hunger'], 'blue')}")
+                    print(f"{colored('|Описание', 'cyan')}: {i['description']}")
+                    print(f"{colored('|Количество', 'cyan')}: {colored(i['count'], 'blue')}")
+                    print(f"{colored('|__________________', 'cyan')}")
+            return 0
         else:
             self.say("У меня ничего нет...")
 
-    def healList(self):
-        newList = []
-        title = ""
-        num = 0
-        data = []
-        for i in self.inventory:
-            if type(i) == Heal:
-                num += 1
-                newList.append(i)
-                title += f"{colored(num, 'cyan')} - {i.dispName}"
-        data.append(newList)
-        return self.choose(data)
+    # def healList(self):
+    #     newList = []
+    #     title = ""
+    #     num = 0
+    #     data = []
+    #     for i in self.inventory:
+    #         if type(i) == Heal:
+    #             num += 1
+    #             newList.append(i)
+    #             title += f"{colored(num, 'cyan')} - {i.dispName}"
+    #     data.append(newList)
+    #     return self.choose(data)
     
     def choose(self, data):
         self.say("Что же мне выбрать?")
@@ -530,18 +533,22 @@ class Player:
         cprint(f'{self.name}: {text}', self.textColor)
 
     def addToInv(self, item):
-        for i in self.inventory:
-            if i.name == item.name:
-                return self.plusToInv(i)
-        header(f"К вам добавилось {item.name} {item.count} шт.")
-        return self.inventory.append(item)
+        if len(self.inventory) > 0:
+            for i in self.inventory:
+                if i['name'] == item['name']:
+                    self.plusToInv(i)
+                    return header(f"К Вы получили {item['dispName']} ещё {item['count']} шт.")
+            self.inventory.append(item)
+            return header(f"К вам добавилось {item['dispName']} {item['count']} шт.")
+        else:
+            self.inventory.append(item)
+            return header(f"К вам добавилось {item['dispName']} {item['count']} шт.")
 
     def plusToInv(self, item):
         for i in self.inventory:
-            if i.name == item.name:
-                i.count += item.count
+            if i['name'] == item['name']:
+                i['count'] += item['count']
                 return i
-        header(f"Вы получили {item.name} {item.count} шт.")
         return self.addToInv(item)
 
     def clearInv(self):
@@ -821,11 +828,25 @@ cityNpc = [
     NPC("Лара", "ящерица", "f", "воительница", True),
 ]
 
+
+# Обычный предмет
+stick = {'name': 'Stick', 'dispName': 'Палка', 'use': None, 'count': 3, 'description': 'Обычная палка'}
+# Личилка
+miniHeal = {'name': 'SmolHeal', 'dispName': 'Маленькая аптечка', 'heal': 5, 'count': 2, 'description': 'Маленькая аптечка'}
+# Еда
+steak = {'name': 'Stake', 'dispName': 'Стейк', 'hunger': 10, 'count': 3, 'description': 'Вкусный жаренный стейк, приготовленный с любовью'}
+
+cityItems = [
+    stick,
+    miniHeal,
+    steak,
+]
+
 # Локации
 locs = [
     Location("Plane", "Равнина", 0, 0, 0, True, [], "Просто равнина.", ['City']),
     Location("Plane2", "Не равнина", 0, 0, 0, True, [], "Это не равнина.", ['City']),
-    Location("City", "Город", 20, 10, 10, True, [cityNpc], "Жилой Город.", ['Plane', 'Plane2']),
+    Location("City", "Город", 20, 10, 10, True, [cityNpc], "Жилой Город.", ['Plane', 'Plane2'], cityItems),
 ]
 
 # Другие персонажи
@@ -839,89 +860,88 @@ mainMenu.mainMenuScreen()
 
 data = mainMenu.data
 
-if type(data) not in (tuple, list):
-    def start(checkRace = False, checkGender = False, err = False, data = [], dialogue = False, done = False):
+def start(checkRace = False, checkGender = False, err = False, data = [], dialogue = False, done = False):
+    clear()
+
+    if checkRace == False and checkGender == False and dialogue == False:
+        header("Вы просыпаетесь в аду, и перед вами стоит дьяволица, раскошная женщина, и смотрит на вас не совсем довольная.")
+        input("Нажмите Enter.")
+        clear()
+        devil.say("Как звать?")
+        name = getName()
+        data.append(name)
+
+        return start(True, False, False, data)
+
+    if checkRace == True:
+        devil.say("Таак... какой же ты рассы у нас?")
+        if err == True:
+            warning("Расса не может быть пустым!")
+        race = getRace()
+
+        if race != "":
+            data.append(race)
+            return start(False, True, False, data)
+        else:
+            return start(True, False, True, data)
+
+    if checkGender == True:
+        devil.say("Что-то не понятно, какого ты пола.")
+        if err == True:
+            warning("Такого пола нет!")
+
+        gender = input('[м/ж]: ')
+        gender = detectGender(gender)
+
+        if gender == 'm' or gender == 'f':
+            data.append(gender)
+            return start(False, False, False, data, True)
+        else:
+            return start(False, True, True, data, False)
+
+    if dialogue == True:
+        clear()
+        devil.say(f"Чтож, {data[0]}, пришло время идти в ад за то, что ты {'сделала' if data[2] == 'f' else 'сделал'}")
+        input("Нажмите Enter.")
+        clear()
+        angel.say("Постой!")
+        input("Нажмите Enter.")
+        clear()
+        devil.say("Как ты тут оказалась? Ты же ангел.")
+        input("Нажмите Enter.")
+        clear()
+        angel.say(f"Знаю, и я решила что тебе стоит дать {'ей' if data[2] == 'f' else 'ему'} шанс на новую жизнь.")
+        input("Нажмите Enter.")
+        clear()
+        devil.say("...Ты сейчас серьёзна?")
+        input("Нажмите Enter.")
+        clear()
+        angel.say(f"Да, {'ей' if data[2] == 'f' else 'ему'} ждут очень важные дела на земле.")
+        input("Нажмите Enter.")
+        clear()
+        devil.say("А почему сама не займёшся этим?")
+        input("Нажмите Enter.")
+        clear()
+        angel.say(f"Мне не положено ничего делать, зато {'ей можно' if data[2] == 'f' else 'ему можно'}")
+        input("Нажмите Enter.")
+        clear()
+        devil.say(f"Эх...чтож, так и быть, тебе повезло, {data[0]}...")
+        input("Нажмите Enter.")
+        clear()
+        devil.say(f"Ты не идёшь в ад, но учти, если не справишся, то твой путь тебе, думаю, понятен.")
+        input("Нажмите Enter.")
         clear()
 
-        if checkRace == False and checkGender == False and dialogue == False:
-            header("Вы просыпаетесь в аду, и перед вами стоит дьяволица, раскошная женщина, и смотрит на вас не совсем довольная.")
-            input("Нажмите Enter.")
-            clear()
-            devil.say("Как звать?")
-            name = getName()
-            data.append(name)
+        print("Произашла вспышка, и вы потеряли сознание...")
+        input("Нажмите Enter.")
+        header("Вы проснулись через час после всего, что случилось в том мире.")
+        input("Нажмите Enter.")
+        header(f"Вам предстоит начать новую жизнь, ведь вы теперь {'не та' if data[2] == 'f' else 'не тот'}, кем были.")
+        input("Нажмите Enter.")
 
-            return start(True, False, False, data)
+        return data
 
-        if checkRace == True:
-            devil.say("Таак... какой же ты рассы у нас?")
-            if err == True:
-                warning("Расса не может быть пустым!")
-            race = getRace()
-
-            if race != "":
-                data.append(race)
-                return start(False, True, False, data)
-            else:
-                return start(True, False, True, data)
-
-        if checkGender == True:
-            devil.say("Что-то не понятно, какого ты пола.")
-            if err == True:
-                warning("Такого пола нет!")
-
-            gender = input('[м/ж]: ')
-            gender = detectGender(gender)
-
-            if gender == 'm' or gender == 'f':
-                data.append(gender)
-                return start(False, False, False, data, True)
-            else:
-                return start(False, True, True, data, False)
-
-        if dialogue == True:
-            clear()
-            devil.say(f"Чтож, {data[0]}, пришло время идти в ад за то, что ты {'сделала' if data[2] == 'f' else 'сделал'}")
-            input("Нажмите Enter.")
-            clear()
-            angel.say("Постой!")
-            input("Нажмите Enter.")
-            clear()
-            devil.say("Как ты тут оказалась? Ты же ангел.")
-            input("Нажмите Enter.")
-            clear()
-            angel.say(f"Знаю, и я решила что тебе стоит дать {'ей' if data[2] == 'f' else 'ему'} шанс на новую жизнь.")
-            input("Нажмите Enter.")
-            clear()
-            devil.say("...Ты сейчас серьёзна?")
-            input("Нажмите Enter.")
-            clear()
-            angel.say(f"Да, {'ей' if data[2] == 'f' else 'ему'} ждут очень важные дела на земле.")
-            input("Нажмите Enter.")
-            clear()
-            devil.say("А почему сама не займёшся этим?")
-            input("Нажмите Enter.")
-            clear()
-            angel.say(f"Мне не положено ничего делать, зато {'ей можно' if data[2] == 'f' else 'ему можно'}")
-            input("Нажмите Enter.")
-            clear()
-            devil.say(f"Эх...чтож, так и быть, тебе повезло, {data[0]}...")
-            input("Нажмите Enter.")
-            clear()
-            devil.say(f"Ты не идёшь в ад, но учти, если не справишся, то твой путь тебе, думаю, понятен.")
-            input("Нажмите Enter.")
-            clear()
-
-            print("Произашла вспышка, и вы потеряли сознание...")
-            input("Нажмите Enter.")
-            header("Вы проснулись через час после всего, что случилось в том мире.")
-            input("Нажмите Enter.")
-            header(f"Вам предстоит начать новую жизнь, ведь вы теперь {'не та' if data[2] == 'f' else 'не тот'}, кем были.")
-            input("Нажмите Enter.")
-
-            return data
-
-
+if type(data) not in (tuple, list):
     clear()
 
     player = start()
@@ -933,7 +953,7 @@ if type(data) not in (tuple, list):
     # Переход
     goto("Plane", locs)
 else:
-    player = Player(data[0]['name'], data[0]['gender'], data[0]['race'])
+    player = Player(data[0]['name'], data[0]['gender'], data[0]['race'], data[0]['inventory'])
     if len(data) > 2:
         for i in cityNpc:
             for a in data[2]:
