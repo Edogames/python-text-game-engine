@@ -510,19 +510,6 @@ class Player:
             return 0
         else:
             self.say("У меня ничего нет...")
-
-    # def healList(self):
-    #     newList = []
-    #     title = ""
-    #     num = 0
-    #     data = []
-    #     for i in self.inventory:
-    #         if type(i) == Heal:
-    #             num += 1
-    #             newList.append(i)
-    #             title += f"{colored(num, 'cyan')} - {i.dispName}"
-    #     data.append(newList)
-    #     return self.choose(data)
     
     def choose(self, data):
         self.say("Что же мне выбрать?")
