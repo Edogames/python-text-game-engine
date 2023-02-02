@@ -1,12 +1,12 @@
 # Важные компоненты
-from npc import NPC
-from player import Player
-from monster import Monster
-from saveSystem import SaveSystem
-from mainMenu import MainMenu
-from utilities import goto, clear
-from store import Store
-from location import Location
+from packages.npc import NPC
+from packages.player import Player
+from packages.monster import Monster
+from packages.saveSystem import SaveSystem
+from packages.mainMenu import MainMenu
+from packages.utilities import goto, clear
+from packages.store import Store
+from packages.location import Location
 
 mainMenu = MainMenu(10, False)
 
@@ -59,7 +59,7 @@ data = mainMenu.data
 
 if type(data) not in (tuple, list):
     clear()
-    from startFunction import start
+    from packages.startFunction import start
 
     player = start()
     player = Player(player[0], player[2], player[1])

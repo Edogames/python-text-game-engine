@@ -1,9 +1,9 @@
 from termcolor import colored, cprint
-from utilities import clear, checkChoice, pressEnter
-from choices import Choices
+from packages.utilities import clear, checkChoice, pressEnter
+from packages.choices import Choices
 import random
-from utilities import header, detectChoice, checkChoice
-from saveSystem import SaveSystem
+from packages.utilities import header, detectChoice, checkChoice
+from packages.saveSystem import SaveSystem
 
 # Локации
 class Location:
@@ -147,7 +147,7 @@ class Location:
         if checkChoice(choice) == None:
             return self.start(locs, player, '0', False, True)
         elif choice == '1':
-            from utilities import goto
+            from packages.utilities import goto
             clear()
             player.say("Куда же мне идти?")
             text = ""

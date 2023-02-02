@@ -1,6 +1,6 @@
 from termcolor import colored
-from utilities import clear, checkChoice, pressEnter
-from choices import Choices
+from packages.utilities import clear, checkChoice, pressEnter
+from packages.choices import Choices
 
 class Store:
     def __init__(self, name, placeName, sellItems=[]):
@@ -9,7 +9,7 @@ class Store:
         self.sellItems = sellItems
 
     def end(self):
-        from utilities import goto
+        from packages.utilities import goto
         return goto(self.placeName)
 
     def showSellItems(self):
@@ -96,7 +96,7 @@ class Store:
             return self.start()
 
     def start(self, player, error=False):
-        from saveSystem import SaveSystem
+        from packages.saveSystem import SaveSystem
         saveSystem = SaveSystem([player], self.placeName)
         saveSystem.save()
         clear()
@@ -136,7 +136,7 @@ class Store:
                 else:
                     return self.start(player, True)
             else:
-                from utilities import goto
+                from packages.utilities import goto
                 header("Удачи в вашем приключении!")
                 pressEnter()
                 return goto(self.placeName)

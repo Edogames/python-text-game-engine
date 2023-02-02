@@ -80,7 +80,7 @@ class SaveSystem:
 
     def deleteSaves(self):
         from main import warning, header
-        from utilities import detectChoice
+        from packages.utilities import detectChoice
         warning("Вы уверены, что хотите удолить сохранения? Это окончательно.")
         if detectChoice(input()) == 'yes':
             os.remove(self.player_data_file)

@@ -1,6 +1,6 @@
 import os
 from termcolor import cprint, colored
-from utilities import detectGender, header, splitText
+from packages.utilities import detectGender, header, splitText
 # Игрок
 class Player:
     def __init__(self, name, gender, race, inventory=[], money=0):

@@ -1,7 +1,7 @@
-from saveSystem import SaveSystem
 from termcolor import cprint
-from choices import Choices
-from utilities import clear, pressEnter
+from packages.saveSystem import SaveSystem
+from packages.choices import Choices
+from packages.utilities import clear, pressEnter
 
 # Меню
 class MainMenu:
@@ -57,7 +57,7 @@ class MainMenu:
         elif choice == '4':
             return self.mainMenuScreen()
         elif choice == '1':
-            from main import warning
+            from packages.utilities import warning
             warning("Эта опция может удалить ваши сохранения!")
             warning("Вы уверены?")
             choices = Choices([

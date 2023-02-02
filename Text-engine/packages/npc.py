@@ -1,6 +1,6 @@
 from termcolor import cprint
-from utilities import warning, header, splitText, clear, detectChoice, detectGender, pressEnter, goto
-from choices import Choices
+from packages.utilities import warning, header, splitText, clear, detectChoice, detectGender, pressEnter, goto
+from packages.choices import Choices
 
 # Не игровой персонаж
 class NPC:

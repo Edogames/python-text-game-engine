@@ -1,5 +1,5 @@
 def start(checkRace = False, checkGender = False, err = False, data = [], dialogue = False, done = False):
-    from utilities import clear, header, pressEnter, warning, detectGender, getName, getRace
+    from packages.utilities import clear, header, pressEnter, warning, detectGender, getName, getRace
     from main import devil, angel
 
     clear()

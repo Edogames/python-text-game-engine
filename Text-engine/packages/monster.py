@@ -1,4 +1,4 @@
-from utilities import warning, splitText
+from packages.utilities import warning, splitText
 from termcolor import cprint
 
 # Враг/монстр
