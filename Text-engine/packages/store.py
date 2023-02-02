@@ -43,7 +43,7 @@ class Store:
 
     def buy(self, player, itemName):
         if player.money > 0:
-            from main import header, warning
+            from packages.utilities import header, warning
             
             targetItem = self.getItem(itemName)
             
@@ -74,7 +74,7 @@ class Store:
             return self.start(player)
 
     def sell(self, player, index):
-        from main import header, warning
+        from packages.utilities import header, warning
         header(f"Сколько вы хотите продать? Макс: {player.inventory[index]['count']}")
         amount = str(input())
         if checkChoice(amount) != None and amount.isnumeric() != False:
@@ -97,6 +97,7 @@ class Store:
 
     def start(self, player, error=False):
         from packages.saveSystem import SaveSystem
+        from packages.utilities import header
         saveSystem = SaveSystem([player], self.placeName)
         saveSystem.save()
         clear()
@@ -106,7 +107,6 @@ class Store:
             'Выйти',
         ])
         if error == False:
-            from main import header
             header(f"Вы вошли в магазин: {self.name}")
             pressEnter()
             header(f"Что вы хотите сделать?")
