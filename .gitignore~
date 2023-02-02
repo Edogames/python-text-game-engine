@@ -127,8 +127,3 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
-
-# Save file
-Text-engine/save.json
-Text-engine/npc_save.json
-Text-engine/player_save.json

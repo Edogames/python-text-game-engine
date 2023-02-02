@@ -11,16 +11,20 @@ class SaveSystem:
             self.player = player[0]
         self.npc = npc
         self.location = location
-        self.save_data = []
+        self.player_data = []
+        self.player_data_file = 'player_save.json'
+        self.npc_data_file = 'npc_save.json'
+        self.npc_data = []
         self.data = None
 
     def save(self):
-        self.save_data = [
+        self.player_data = [
             {
                 'name': self.player.name,
                 'gender': self.player.gender,
                 'race': self.player.race,
                 'inventory': self.player.inventory,
+                'money': self.player.money,
             },
             {
                 'name': self.location,
@@ -28,7 +32,6 @@ class SaveSystem:
         ]
 
         if len(self.npc) > 0:
-            newNpcArr = []
             for i in self.npc:
                 newArr = {
                     'name': i['name'],
@@ -36,28 +39,57 @@ class SaveSystem:
                     'relationList': i['relationList'],
                     'inventory': i['inventory'],
                 }
-                newNpcArr.append(newArr)
-            self.save_data.append(newNpcArr)
+                self.npc_data.append(newArr)
+            
+            if os.stat(self.npc_data_file).st_size > 0:
+                loadedNpcData = []
+                with open(self.npc_data_file, 'r') as f:
+                    loadedNpcData.append(json.loads(f.read()))
+                num = 0
+                for i in range(len(loadedNpcData[0])):
+                    if self.npc_data[num]['name'] == loadedNpcData[0][num]['name']:
+                        self.npc_data[num]['married'] = loadedNpcData[0][num]['married']
+                        self.npc_data[num]['relationList'] = loadedNpcData[0][num]['relationList']
+                        self.npc_data[num]['inventory'] = loadedNpcData[0][num]['inventory']
+                    else:
+                        self.npc_data.append(loadedNpcData[0][num])
+                    num += 1
+                with open(self.npc_data_file, 'w', encoding='utf-8') as jsonFile:
+                    json.dump(self.npc_data, jsonFile, ensure_ascii=True, indent=4, default = lambda x: x.__dict__)
 
-        with open('save.json', 'w', encoding='utf-8') as jsonFile:
-            json.dump(self.save_data, jsonFile, ensure_ascii=True, indent=4, default = lambda x: x.__dict__)
+        with open(self.player_data_file, 'w', encoding='utf-8') as jsonFile:
+            json.dump(self.player_data, jsonFile, ensure_ascii=True, indent=4, default = lambda x: x.__dict__)
 
         return jsonFile.close()
 
     def load(self):
-        if os.path.exists('save.json'):
-            if os.stat('save.json').st_size > 0:
-                with open('save.json', 'r') as f:
-                    objs = json.loads(f.read())
-                    return objs
+        if os.path.exists(self.player_data_file) and os.path.exists(self.npc_data_file):
+            if os.stat(self.player_data_file).st_size > 0:
+                objs = []
+                with open(self.player_data_file, 'r') as f:
+                    objs.append(json.loads(f.read()))
+                if os.stat(self.npc_data_file).st_size > 0:
+                    with open(self.npc_data_file, 'r') as f:
+                        objs.append(json.loads(f.read()))
             else:
                 warning("Файл сохранений - пустой!")
                 warning("Начните новую игру, что бы эта функция сработала.")
-                return False
+                objs = False
+            return objs
         else:
             warning("Нет сохранений!")
             warning("Начните новую игру, что бы эта функция сработала.")
             return False
+
+    def deleteSaves(self):
+        warning("Вы уверены, что хотите удолить сохранения? Это окончательно.")
+        if detectChoice(input()) == 'yes':
+            os.remove(self.player_data_file)
+            os.remove(self.npc_data_file)
+            header("Данные успешно удолены.")
+            return 0
+        else:
+            return 0
 
 # Текст выбора
 class Choices:
@@ -115,6 +147,7 @@ class MainMenu:
         choices = Choices([
             "Начать новую игру",
             "Загрузить сохранение",
+            "Удалить прогресс",
             "Назад",
         ])
 
@@ -123,7 +156,7 @@ class MainMenu:
 
         if choice == '':
             return self.playBtn()
-        elif choice == '3':
+        elif choice == '4':
             return self.mainMenuScreen()
         elif choice == '1':
             warning("Эта опция может удалить ваши сохранения!")
@@ -145,8 +178,11 @@ class MainMenu:
             if self.data != False:
                 return self.data
             else:
-                input("Нажмите Enter.")
+                pressEnter()
                 return self.playBtn()
+        elif choice == '3':
+            result = self.saveSystem.deleteSaves()
+            return self.playBtn()
 
     def mainMenuScreen(self):
         clear()
@@ -191,6 +227,11 @@ def detectChoice(val):
         return 'no'
     else:
         return False
+def checkChoice(val):
+    if val == '0' or val == '':
+        return None
+    else:
+        return val
 
 # Разделитель текста по лимиту
 def splitText(text: str):
@@ -245,11 +286,149 @@ def success(text: str, anim: bool = True):
 def clear():
     return os.system('cls' if os.name=='nt' else 'clear')
 
+# Пустой инпут
+def pressEnter():
+    return input("Нажмите Enter что бы продолжить...")
+
+class Store:
+    def __init__(self, name, placeName, sellItems=[]):
+        self.name = name
+        self.placeName = placeName
+        self.sellItems = sellItems
+
+    def end(self):
+        return goto(self.placeName)
+
+    def showSellItems(self):
+        for i in self.sellItems:
+            if 'heal' in i:
+                print(f"{colored('|Имя', 'cyan')}: {colored(i['dispName'], 'green')}")
+                print(f"{colored('|Здоровие', 'cyan')}: {colored(i['heal'], 'green')}")
+                print(f"{colored('|Описание', 'cyan')}: {i['description']}")
+                print(f"{colored('|Цена', 'cyan')}: {colored(i['price'], 'blue')}")
+                print(f"{colored('|__________________', 'cyan')}")
+            elif 'use' in i:
+                print(f"{colored('|Имя', 'cyan')}: {colored(i['dispName'], 'yellow')}")
+                if i['use'] == None:
+                    print(f"{colored('|Нельзя нигде использовать.', 'cyan')}")
+                else:
+                    print(f"{colored('|Имя', 'cyan')}: {colored(i['use'], 'yellow')}")
+                print(f"{colored('|Описание', 'cyan')}: {i['description']}")
+                print(f"{colored('|Цена', 'cyan')}: {colored(i['price'], 'blue')}")
+                print(f"{colored('|__________________', 'cyan')}")
+            elif 'hunger' in i:
+                print(f"{colored('|Имя', 'cyan')}: {colored(i['dispName'], 'blue')}")
+                print(f"{colored('|Голод', 'cyan')}: {colored(i['hunger'], 'blue')}")
+                print(f"{colored('|Описание', 'cyan')}: {i['description']}")
+                print(f"{colored('|Цена', 'cyan')}: {colored(i['price'], 'blue')}")
+                print(f"{colored('|__________________', 'cyan')}")
+
+    def getItem(self, itemName):
+        for i in self.sellItems:
+            if i['name'] == itemName:
+                return i
+
+    def buy(self, player, itemName):
+        if player.money > 0:
+            
+            targetItem = self.getItem(itemName)
+            
+            header(f"Сколько вы хотите купить {targetItem['dispName']}?")
+            amount = str(input())
+
+            if checkChoice(amount) != None and amount.isnumeric() != False:
+                amount = int(amount)
+
+                moneyToPay = targetItem['price'] * amount
+
+                if player.money < moneyToPay:
+                    warning("Не достаточно денег")
+                    return self.start(player)
+                else:
+                    player.addToInv(targetItem, amount)
+                    player.money -= moneyToPay
+                    header(f"Вы купили {targetItem['dispName']}!")
+                    return self.start(player)
+
+            else:
+                warning(f"{amount} Не являеться цифрой!")
+                pressEnter()
+                return self.start(player)
+        else:
+            warning("У вас нет денег! Вы можете кое что продать тут.")
+            pressEnter()
+            return self.start(player)
+
+    def sell(self, player, index):
+        header(f"Сколько вы хотите продать? Макс: {player.inventory[index]['count']}")
+        amount = str(input())
+        if checkChoice(amount) != None and amount.isnumeric() != False:
+            amount = int(amount)
+            if player.inventory[index]['count'] >= amount:
+                header(f"Вы продали {amount} шт {player.inventory[index]['dispName']}")
+                money = player.inventory[index]['price'] * amount
+                player.minusFromInv(player.inventory[index], amount)
+                player.money += money
+                pressEnter()
+                return self.start(player)
+            else:
+                warning(f"У вас не достаточно {player.inventory[index]['name']} в инвентаре!")
+                pressEnter()
+                return self.start()
+        else:
+            warning(f"{amount} Не являеться цифрой!")
+            pressEnter()
+            return self.start()
+
+    def start(self, player, error=False):
+        saveSystem = SaveSystem([player], self.placeName)
+        saveSystem.save()
+        clear()
+        selection = Choices([
+            'Покупать',
+            'Продать',
+            'Выйти',
+        ])
+        if error == False:
+            header(f"Вы вошли в магазин: {self.name}")
+            pressEnter()
+            header(f"Что вы хотите сделать?")
+        else:
+            header(f"Что вы хотите сделать?")
+        
+        print(selection.displayChoices())
+        choice = str(input())
+        if checkChoice(choice) == None:
+            return self.start(player, True)
+        else:
+            if choice == '1':
+                print("Что вы хотите купить?")
+                self.showSellItems()
+                choice = str(input())
+                if checkChoice(choice) != None and choice.isnumeric() != False:
+                    choice = int(choice) - 1
+                    return self.buy(player, self.sellItems[choice]['name'])
+                else:
+                    return self.start(player, True)
+            elif choice == '2':
+                print("Что вы хотите продавать?")
+                player.showInv()
+                choice = str(input())
+                if checkChoice(choice) != None and choice.isnumeric() != False:
+                    return self.sell(player, int(choice)-1)
+                else:
+                    return self.start(player, True)
+            else:
+                header("Удачи в вашем приключении!")
+                pressEnter()
+                return goto(self.placeName)
+
 # Локации
 class Location:
-    def __init__(self, name, displayName, monsterChance, lootChance, peopleChance, available = True, entities = [], description = "", availFrom = [], items = []):
+    def __init__(self, name, displayName, monsterChance, lootChance, peopleChance, available = True, entities = [], description = "", availFrom = [], items = [], store=None):
         self.name = name
         self.items = items
+        self.store = store
         self.displayName = displayName
         self.monsterChance = monsterChance
         self.lootChance = lootChance
@@ -297,16 +476,15 @@ class Location:
             header(f"Вы нашли: {item['dispName']}!")
             header(f"Хотите забрать?")
             choice = str(input())
-            choice = detectChoice(choice)
-            if(choice == 'yes'):
+            if(detectChoice(choice) == 'yes'):
                 target.addToInv(item)
-                input("Нажмите Enter что бы продолжить...")
+                pressEnter()
                 return self.start(locs, target, '0', True, False)
             else:
                 return self.start(locs, target, '0', False, True)
         else:
             header("Ничего не нашлось...")
-            input("Нажмите Enter что бы продолжить...")
+            pressEnter()
             return self.start(locs, target, '0', False, True)
 
     def getLoc(self, num):
@@ -319,7 +497,7 @@ class Location:
 
         if len(self.entities) == 0:
             header("Тут никаго.")
-            input("Нажмите Enter.")
+            pressEnter()
             return False
 
         person = random.choice(self.entities)
@@ -327,11 +505,11 @@ class Location:
 
         if chance > maxChance / 2:
             header("Начало встречи.")
-            input("Нажмите Enter.")
+            pressEnter()
             return person
         else:
             header("Пока нескем общаться.")
-            input("Нажмите Enter.")
+            pressEnter()
             return False
 
     def showMap(self, locations):
@@ -360,7 +538,7 @@ class Location:
             saveSystem.save()
 
         clear()
-        if choice == '0' or choice == '':
+        if checkChoice(choice) == None:
             if confSnd == True:
                 header(f"Вы находитесь в {self.displayName}", False)
 
@@ -378,11 +556,12 @@ class Location:
                 "Инвентарь",
                 "Поговорить",
                 "Осмотрется",
+                "Идти в магазин",
             ])
 
             print(selection.displayChoices())
             choice = str(input())
-        if choice == '0' or choice == "":
+        if checkChoice(choice) == None:
             return self.start(locs, player, '0', False, True)
         elif choice == '1':
             clear()
@@ -409,7 +588,7 @@ class Location:
         elif choice == '2':
             clear()
             self.stats()
-            input("Нажмите Enter что бы продолжить...")
+            pressEnter()
             return self.start(locs, player, '0', True)
         elif choice == '3':
             clear()
@@ -422,13 +601,13 @@ class Location:
             choice = int(input())
             if choice == 1:
                 player.stats()
-                input("Нажмите Enter что бы продолжить...")
+                pressEnter()
                 return self.start(locs, player, '3', True, False)
             elif choice == 0:
                 return self.start(locs, player, '0', False, True)
         elif choice == '4':
             player.showInv()
-            input("Нажмите Enter что бы продолжить...")
+            pressEnter()
             return self.start(locs, player, '0', True, False)
         elif choice == '5':
             person = self.getPerson()
@@ -438,10 +617,17 @@ class Location:
                 person.meet(player, self.name)
         elif choice == '6':
             return self.getItem(player)
+        elif choice == '7':
+            if self.store != None:
+                return self.store.start(player)
+            else:
+                header("Здесь нет магазинов")
+                pressEnter()
+                return self.start(locs, player, '0', True, False)
 
 # Игрок
 class Player:
-    def __init__(self, name, gender, race, inventory=[]):
+    def __init__(self, name, gender, race, inventory=[], money=0):
         # Get a name for character
         if name == "":
             self.name = os.getlogin()
@@ -471,6 +657,8 @@ class Player:
         self.stamina = 100
         self.lives = 3
 
+        self.money = money
+
         self.race = race
 
         self.inventory = inventory
@@ -481,6 +669,7 @@ class Player:
         cprint(f"Пол: {self.displayGender}", self.textColor)
         cprint(f"Расса: {self.race}", self.textColor)
         cprint(f"Здоровье: {self.health}")
+        cprint(f"Деньги: {self.money}")
 
     def showInv(self):
         if len(self.inventory) > 0:
@@ -491,6 +680,7 @@ class Player:
                     print(f"{colored('|Здоровие', 'cyan')}: {colored(i['heal'], 'green')}")
                     print(f"{colored('|Описание', 'cyan')}: {i['description']}")
                     print(f"{colored('|Количество', 'cyan')}: {colored(i['count'], 'green')}")
+                    print(f"{colored('|Цена', 'cyan')}: {colored(i['price'], 'blue')}")
                     print(f"{colored('|__________________', 'cyan')}")
                 elif 'use' in i:
                     print(f"{colored('|Имя', 'cyan')}: {colored(i['dispName'], 'yellow')}")
@@ -500,12 +690,14 @@ class Player:
                         print(f"{colored('|Имя', 'cyan')}: {colored(i['use'], 'yellow')}")
                     print(f"{colored('|Описание', 'cyan')}: {i['description']}")
                     print(f"{colored('|Количество', 'cyan')}: {colored(i['count'], 'yellow')}")
+                    print(f"{colored('|Цена', 'cyan')}: {colored(i['price'], 'blue')}")
                     print(f"{colored('|__________________', 'cyan')}")
                 elif 'hunger' in i:
                     print(f"{colored('|Имя', 'cyan')}: {colored(i['dispName'], 'blue')}")
                     print(f"{colored('|Голод', 'cyan')}: {colored(i['hunger'], 'blue')}")
                     print(f"{colored('|Описание', 'cyan')}: {i['description']}")
                     print(f"{colored('|Количество', 'cyan')}: {colored(i['count'], 'blue')}")
+                    print(f"{colored('|Цена', 'cyan')}: {colored(i['price'], 'blue')}")
                     print(f"{colored('|__________________', 'cyan')}")
             return 0
         else:
@@ -519,40 +711,50 @@ class Player:
         text = splitText(text)
         cprint(f'{self.name}: {text}', self.textColor)
 
-    def addToInv(self, item):
+    def addToInv(self, item, count=None):
         if len(self.inventory) > 0:
             for i in self.inventory:
                 if i['name'] == item['name']:
-                    self.plusToInv(i)
-                    return header(f"К Вы получили {item['dispName']} ещё {item['count']} шт.")
-            self.inventory.append(item)
-            return header(f"К вам добавилось {item['dispName']} {item['count']} шт.")
+                    if count != None:
+                        item['count'] = count
+                    self.plusToInv(i, count)
+                    header(f"К Вы получили {item['dispName']} ещё {item['count']} шт.")
+                else:
+                    if count != None:
+                        item['count'] = count
+                    header(f"К Вы получили {item['dispName']} ещё {item['count']} шт.")
+            return self.inventory.append(item)
         else:
-            self.inventory.append(item)
-            return header(f"К вам добавилось {item['dispName']} {item['count']} шт.")
+            return self.inventory.append(item)
 
-    def plusToInv(self, item):
+    def plusToInv(self, item, count=None):
         for i in self.inventory:
             if i['name'] == item['name']:
-                i['count'] += item['count']
+                if count == None:
+                    i['count'] += item['count']
+                else:
+                    i['count'] += count
                 return i
-        return self.addToInv(item)
+        return self.addToInv(item, count)
 
     def clearInv(self):
-        header("Ваш инвентарь был очищен.")
         self.inventory = []
+        header("Ваш инвентарь был очищен.")
         return self.inventory
     
-    def minusFromInv(self, item):
-        header(f"С вас отняли {item.name} {item.count} шт.")
+    def minusFromInv(self, item, amount):
         for i in self.inventory:
-            if i.name == item.name:
-                i.count -= item.count
-                if i.count == 0:
+            if i['name'] == item['name'] and i['count'] >= amount:
+                i['count'] -= amount
+                if i['count'] == 0:
                     self.inventory.remove(i)
-                    break
+                    header(f"У вас больше нет {item['dispName']}.")
+                    return True
                 else:
-                    break
+                    header(f"С вас отняли {item['dispName']} - {amount} шт.")
+                    return True
+            else:
+                return False
 
     def takeDMG(self, amount):
         return self.health - amount
@@ -667,14 +869,13 @@ class NPC:
         if choice == '4':
             self.say(f"Очень приятно познакомиться, {player.name}, я {self.name}, как ты себя чувствуешь?")
             answ = input('Хорошо[д], Плохо[н]: ')
-            answ = detectChoice(answ)
-            if answ == 'yes':
+            if detectChoice(answ) == 'yes':
                 self.say(f"Чтож, хих, я {'рада.' if self.gender == 'f' else 'рад.'}")
-                input("Нажмите Enter.")
+                pressEnter()
                 return self.smolTalk(player, placeName)
-            elif answ == 'no':
+            elif detectChoice(answ) == 'no':
                 self.say(f"Оу, мне жаль {player.name}")
-                input("Нажмите Enter.")
+                pressEnter()
                 return self.smolTalk(player, placeName)
             else:
                 return self.smolTalk(player, placeName, '4')
@@ -694,7 +895,7 @@ class NPC:
                 return self.smolTalk(player, placeName)
             elif choice == '1':
                 self.stats(player)
-                input("Нажмите Enter.")
+                pressEnter()
                 return self.smolTalk(player, placeName)
             elif choice == '2':
                 clear()
@@ -702,13 +903,13 @@ class NPC:
             elif choice == '3':
                 clear()
                 self.say(f"Хорошо, {player.name}, потом, тогда поговорим.")
-                input("Нажмите Enter.")
+                pressEnter()
                 header(f"{self.name} {'улыбнулась и ушла' if self.gender == 'f' else 'улыбнулся и ушёл'}.")
-                input("Нажмите Enter.")
+                pressEnter()
                 return self.endConversation(placeName)
 
     def endConversation(self, placeName):
-            return goto(placeName)
+        return goto(placeName)
 
     def conversationWithStranger(self, player, placeName):
         self.addRelationship(player, 'знакомая' if player.gender == 'f' else 'знакомый')
@@ -732,14 +933,14 @@ class NPC:
             self.say(f"Привет, я {self.name}, хочешь говорить?")
 
         choice = input('[д/н]: ')
-        choice = detectChoice(choice)
-        if choice == 'yes':
+        
+        if detectChoice(choice) == 'yes':
             self.checkRelationship(player, placeName)
-            input("Нажмите Enter")
+            pressEnter()
             return goto(placeName, [])
-        elif choice == 'no':
+        elif detectChoice(choice) == 'no':
             self.say('Ну, видимо у тебя много дел, чтож, не буду мешать.')
-            input("Нажмите Enter")
+            pressEnter()
             return goto(placeName, [])
         else:
             return self.meet(player, placeName, True)
@@ -817,11 +1018,11 @@ cityNpc = [
 
 
 # Обычный предмет
-stick = {'name': 'Stick', 'dispName': 'Палка', 'use': None, 'count': 3, 'description': 'Обычная палка'}
+stick = {'name': 'Stick', 'dispName': 'Палка', 'use': None, 'count': 3, 'price': 0, 'description': 'Обычная палка'}
 # Личилка
-miniHeal = {'name': 'SmolHeal', 'dispName': 'Маленькая аптечка', 'heal': 5, 'count': 2, 'description': 'Маленькая аптечка'}
+miniHeal = {'name': 'SmolHeal', 'dispName': 'Маленькая аптечка', 'heal': 5, 'count': 2, 'price': 10, 'description': 'Маленькая аптечка'}
 # Еда
-steak = {'name': 'Stake', 'dispName': 'Стейк', 'hunger': 10, 'count': 3, 'description': 'Вкусный жаренный стейк, приготовленный с любовью'}
+steak = {'name': 'Stake', 'dispName': 'Стейк', 'hunger': 10, 'count': 3, 'price': 12, 'description': 'Вкусный жаренный стейк, приготовленный с любовью'}
 
 cityItems = [
     stick,
@@ -829,11 +1030,14 @@ cityItems = [
     steak,
 ]
 
+# Магазины
+cityStore = Store('Продуктовая', 'City', [miniHeal, steak])
+
 # Локации
 locs = [
     Location("Plane", "Равнина", 0, 0, 0, True, [], "Просто равнина.", ['City']),
     Location("Plane2", "Не равнина", 0, 0, 0, True, [], "Это не равнина.", ['City']),
-    Location("City", "Город", 20, 10, 10, True, [cityNpc], "Жилой Город.", ['Plane', 'Plane2'], cityItems),
+    Location("City", "Город", 20, 10, 10, True, [cityNpc], "Жилой Город.", ['Plane', 'Plane2'], cityItems, cityStore),
 ]
 
 # Другие персонажи
@@ -852,7 +1056,7 @@ def start(checkRace = False, checkGender = False, err = False, data = [], dialog
 
     if checkRace == False and checkGender == False and dialogue == False:
         header("Вы просыпаетесь в аду, и перед вами стоит дьяволица, раскошная женщина, и смотрит на вас не совсем довольная.")
-        input("Нажмите Enter.")
+        pressEnter()
         clear()
         devil.say("Как звать?")
         name = getName()
@@ -889,42 +1093,42 @@ def start(checkRace = False, checkGender = False, err = False, data = [], dialog
     if dialogue == True:
         clear()
         devil.say(f"Чтож, {data[0]}, пришло время идти в ад за то, что ты {'сделала' if data[2] == 'f' else 'сделал'}")
-        input("Нажмите Enter.")
+        pressEnter()
         clear()
         angel.say("Постой!")
-        input("Нажмите Enter.")
+        pressEnter()
         clear()
         devil.say("Как ты тут оказалась? Ты же ангел.")
-        input("Нажмите Enter.")
+        pressEnter()
         clear()
         angel.say(f"Знаю, и я решила что тебе стоит дать {'ей' if data[2] == 'f' else 'ему'} шанс на новую жизнь.")
-        input("Нажмите Enter.")
+        pressEnter()
         clear()
         devil.say("...Ты сейчас серьёзна?")
-        input("Нажмите Enter.")
+        pressEnter()
         clear()
         angel.say(f"Да, {'ей' if data[2] == 'f' else 'ему'} ждут очень важные дела на земле.")
-        input("Нажмите Enter.")
+        pressEnter()
         clear()
         devil.say("А почему сама не займёшся этим?")
-        input("Нажмите Enter.")
+        pressEnter()
         clear()
         angel.say(f"Мне не положено ничего делать, зато {'ей можно' if data[2] == 'f' else 'ему можно'}")
-        input("Нажмите Enter.")
+        pressEnter()
         clear()
         devil.say(f"Эх...чтож, так и быть, тебе повезло, {data[0]}...")
-        input("Нажмите Enter.")
+        pressEnter()
         clear()
         devil.say(f"Ты не идёшь в ад, но учти, если не справишся, то твой путь тебе, думаю, понятен.")
-        input("Нажмите Enter.")
+        pressEnter()
         clear()
 
         print("Произашла вспышка, и вы потеряли сознание...")
-        input("Нажмите Enter.")
+        pressEnter()
         header("Вы проснулись через час после всего, что случилось в том мире.")
-        input("Нажмите Enter.")
+        pressEnter()
         header(f"Вам предстоит начать новую жизнь, ведь вы теперь {'не та' if data[2] == 'f' else 'не тот'}, кем были.")
-        input("Нажмите Enter.")
+        pressEnter()
 
         return data
 
@@ -940,13 +1144,13 @@ if type(data) not in (tuple, list):
     # Переход
     goto("Plane", locs)
 else:
-    player = Player(data[0]['name'], data[0]['gender'], data[0]['race'], data[0]['inventory'])
+    player = Player(data[0][0]['name'], data[0][0]['gender'], data[0][0]['race'], data[0][0]['inventory'], data[0][0]['money'])
     if len(data) > 2:
         for i in cityNpc:
-            for a in data[2]:
+            for a in data[1]:
                 if i.name == a['name']:
                     for j in cityNpc:
                         j.inventory = a['inventory']
                         j.relationList = a['relationList']
                         j.married = a['married']
-    goto(data[1]['name'])
+    goto(data[0][1]['name'])
