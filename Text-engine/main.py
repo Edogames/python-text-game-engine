@@ -1,11 +1,10 @@
 # Важные компоненты
-from termcolor import colored, cprint
 from npc import NPC
 from player import Player
 from monster import Monster
 from saveSystem import SaveSystem
 from mainMenu import MainMenu
-from utilities import detectChoice, detectGender, goto, clear, pressEnter, splitText, header, warning, success
+from utilities import goto, clear
 from store import Store
 from location import Location
 
