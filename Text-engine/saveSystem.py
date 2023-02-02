@@ -59,6 +59,7 @@ class SaveSystem:
         return jsonFile.close()
 
     def load(self):
+        from main import warning
         if os.path.exists(self.player_data_file) and os.path.exists(self.npc_data_file):
             if os.stat(self.player_data_file).st_size > 0:
                 objs = []
@@ -78,6 +79,8 @@ class SaveSystem:
             return False
 
     def deleteSaves(self):
+        from main import warning, header
+        from utilities import detectChoice
         warning("Вы уверены, что хотите удолить сохранения? Это окончательно.")
         if detectChoice(input()) == 'yes':
             os.remove(self.player_data_file)
