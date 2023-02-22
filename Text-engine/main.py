@@ -22,6 +22,10 @@ cityNpc = [
     NPC("Лара", "ящерица", "f", "воительница", True),
 ]
 
+argonMonster = [
+    Monster('Аргон', "ж", 5, 100, 'Plane'),
+    Monster('Аргон', "м", 15, 150, 'Plane'),
+]
 
 # Обычный предмет
 stick = {'name': 'Stick', 'dispName': 'Палка', 'use': None, 'count': 3, 'price': 0, 'description': 'Обычная палка'}

@@ -2,6 +2,7 @@ from termcolor import cprint
 from packages.saveSystem import SaveSystem
 from packages.choices import Choices
 from packages.utilities import clear, pressEnter
+from packages.gameInstructions import InformationBoard, BasicInstructions
 
 # Меню
 class MainMenu:
@@ -89,6 +90,7 @@ class MainMenu:
             [
                 "Играть",
                 "Настройки",
+                "Инструкции",
             ]
         )
 
@@ -97,8 +99,16 @@ class MainMenu:
         choice = str(input("Ваш выбор: "))
 
         if choice == '':
+            # Возвращаемся в главное меню
             return self.mainMenuScreen()
         elif choice == '1':
+            # Вот тут кнопка начало игры
             return self.playBtn()
         elif choice == '2':
+            # Вот тут меню настроек
             return self.options()
+        elif choice == '3':
+            # Вот тут инструкция показываеться
+            BasicInstructions.Gameplay()
+            return self.mainMenuScreen()
+

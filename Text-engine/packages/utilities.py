@@ -1,6 +1,19 @@
 import os
+from os import system
 import time
-from termcolor import cprint
+from termcolor import cprint, colored
+
+# html теги
+hr = "\n_____________________________\n"
+br = "\n"
+
+# получаем и заменяем html теги
+def getHtmlTags(text):
+    text = splitText(text)
+    text = text.replace('<br>', br)
+    text = text.replace('<hr>', hr)
+
+    return text
 
 # Всякие детекторы
 def detectGender(val):
