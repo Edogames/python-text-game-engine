@@ -72,7 +72,7 @@ if type(data) not in (tuple, list):
     saveSystem.save()
 
     # Переход
-    goto("Plane", locs)
+    goto(locName="Plane", locations=locs)
 else:
     player = Player(data[0][0]['name'], data[0][0]['gender'], data[0][0]['race'], data[0][0]['inventory'], data[0][0]['money'])
     if len(data) > 2:

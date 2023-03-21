@@ -41,7 +41,7 @@ class MainMenu:
 
         return self.mainMenuScreen()
 
-    def playBtn(self, choice = '0'):
+    def playBtn(self, choice = ''):
         clear()
         choices = Choices([
             "Начать новую игру",
@@ -58,21 +58,25 @@ class MainMenu:
         elif choice == '4':
             return self.mainMenuScreen()
         elif choice == '1':
-            from packages.utilities import warning
+            from packages.utilities import warning, detectChoice
             warning("Эта опция может удалить ваши сохранения!")
-            warning("Вы уверены?")
-            choices = Choices([
-                "Да",
-                "Нет",
-            ])
-            print(choices.displayChoices())
-            choice = input("Ваш выбор: ")
-            if choice == '':
-                return self.playBtn('1')
-            elif choice == '1':
+            if detectChoice(msg="Вы уверены?") == 'yes':
                 return self.data
-            elif choice == '2':
+            else:
                 return self.mainMenuScreen()
+            # warning("Вы уверены?")
+            # choices = Choices([
+            #     "Да",
+            #     "Нет",
+            # ])
+            # print(choices.displayChoices())
+            # choice = input("Ваш выбор: ")
+            # if choice == '':
+            #     return self.playBtn('1')
+            # elif choice == '1':
+            #     return self.data
+            # elif choice == '2':
+            #     return self.mainMenuScreen()
         elif choice == '2':
             self.data = self.saveSystem.load()
             if self.data != False:
@@ -81,7 +85,7 @@ class MainMenu:
                 pressEnter()
                 return self.playBtn()
         elif choice == '3':
-            result = self.saveSystem.deleteSaves()
+            self.saveSystem.deleteSaves()
             return self.playBtn()
 
     def mainMenuScreen(self):

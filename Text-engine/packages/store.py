@@ -10,7 +10,7 @@ class Store:
 
     def end(self):
         from packages.utilities import goto
-        return goto(self.placeName)
+        return goto(locName=self.placeName)
 
     def showSellItems(self):
         for i in self.sellItems:
@@ -139,4 +139,4 @@ class Store:
                 from packages.utilities import goto
                 header("Удачи в вашем приключении!")
                 pressEnter()
-                return goto(self.placeName)
+                return goto(locName=self.placeName)

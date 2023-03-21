@@ -37,7 +37,7 @@ class SaveSystem:
                 }
                 self.npc_data.append(newArr)
             
-            if os.stat(self.npc_data_file).st_size > 0:
+            if os.path.exists(self.npc_data_file) and os.stat(self.npc_data_file).st_size > 0:
                 loadedNpcData = []
                 with open(self.npc_data_file, 'r') as f:
                     loadedNpcData.append(json.loads(f.read()))
@@ -60,31 +60,33 @@ class SaveSystem:
 
     def load(self):
         from packages.utilities import warning
-        if os.path.exists(self.player_data_file) and os.path.exists(self.npc_data_file):
+        if os.path.exists(self.player_data_file):
             if os.stat(self.player_data_file).st_size > 0:
                 objs = []
                 with open(self.player_data_file, 'r') as f:
                     objs.append(json.loads(f.read()))
-                if os.stat(self.npc_data_file).st_size > 0:
-                    with open(self.npc_data_file, 'r') as f:
-                        objs.append(json.loads(f.read()))
             else:
                 warning("Файл сохранений - пустой!")
                 warning("Начните новую игру, что бы эта функция сработала.")
                 objs = False
-            return objs
         else:
             warning("Нет сохранений!")
             warning("Начните новую игру, что бы эта функция сработала.")
-            return False
+            objs = False
+        
+        if os.path.exists(self.npc_data_file):
+            if os.stat(self.npc_data_file).st_size > 0:
+                with open(self.npc_data_file, 'r') as f:
+                    objs.append(json.loads(f.read()))
+        
+        return objs
 
     def deleteSaves(self):
         from packages.utilities import detectChoice, warning, header
-        warning("Вы уверены, что хотите удолить сохранения? Это окончательно.")
-        if detectChoice(input()) == 'yes':
-            os.remove(self.player_data_file)
-            os.remove(self.npc_data_file)
-            header("Данные успешно удолены.")
+        if detectChoice(msg="Вы уверены, что хотите удалить сохранения? Это окончательно.") == 'yes':
+            if os.path.exists(self.player_data_file): os.remove(self.player_data_file)
+            if os.path.exists(self.player_data_file): os.remove(self.npc_data_file)
+            header("Данные успешно удалены.")
             return 0
         else:
             return 0

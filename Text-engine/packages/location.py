@@ -140,6 +140,7 @@ class Location:
                 "Поговорить",
                 "Осмотрется",
                 "Идти в магазин",
+                "В главное меню",
             ])
 
             print(selection.displayChoices())
@@ -147,28 +148,35 @@ class Location:
         if checkChoice(choice) == None:
             return self.start(locs, player, '0', False, True)
         elif choice == '1':
+            import PySimpleGUI as sg
             from packages.utilities import goto
             clear()
             player.say("Куда же мне идти?")
-            text = ""
+
+            layout = [
+                [sg.Text("Меню перемещение.")]
+            ]
+
             number = 0
-            availLocs = []
             for i in locs:
                 if i.name != self.name and i.available == True:
                     for j in i.availFrom:
                         if j == self.name:
                             number += 1
-                            availLocs.append(i)
-                            text += f"{colored(f'{number} -', 'cyan')} {i.displayName} "
+                            layout.append([sg.Button(i.displayName)])
 
-            print(text, f"{colored('0 -', 'cyan')} Отмена")
-            num = input()
+            layout[1].append(sg.Cancel())
 
-            if num == '0':
+            window = sg.Window("Перемещение", layout)
+
+            value, event = window.read()
+            
+            window.close()
+
+            if value == "Cancel":
                 return self.start(locs, player, '0', False, True)
-            elif num == "":
-                return self.start(locs, player, '1', False, True)
-            return goto(availLocs[int(num) - 1].name, locs)
+            else:
+                return goto(locDisplayName=value, locations=locs)
         elif choice == '2':
             clear()
             self.stats()
@@ -182,13 +190,18 @@ class Location:
             text = selection.displayChoices()
             text += f"{colored('0 -', 'cyan')} Вернуться"
             print(text)
-            choice = int(input())
-            if choice == 1:
+            choice = input()
+            if choice == '1':
                 player.stats()
                 pressEnter()
                 return self.start(locs, player, '3', True, False)
-            elif choice == 0:
+            elif choice == '0':
                 return self.start(locs, player, '0', False, True)
+            else:
+                from packages.utilities import warning
+                warning("Такой опции нет!")
+                pressEnter()
+                return self.start(locs, player, '3', True, False)
         elif choice == '4':
             player.showInv()
             pressEnter()
@@ -208,3 +221,14 @@ class Location:
                 header("Здесь нет магазинов")
                 pressEnter()
                 return self.start(locs, player, '0', True, False)
+        elif choice == '8':
+            if detectChoice(msg="Вы уверены что хотите выйти в главное меню? Что не сохранилось то не сохранилось.") == 'yes':
+                from main import mainMenu
+                return mainMenu.mainMenuScreen()
+            else:
+                return self.start(locs, player, '0', True, False)
+        else:
+            from packages.utilities import goto
+            warning("Такой опции нет!")
+            pressEnter()
+            return self.start(locs, player, '0', True, False)

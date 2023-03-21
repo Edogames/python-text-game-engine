@@ -1,5 +1,5 @@
 def start(checkRace = False, checkGender = False, err = False, data = [], dialogue = False, done = False):
-    from packages.utilities import clear, header, pressEnter, warning, detectGender, getName, getRace
+    from packages.utilities import clear, header, pressEnter, warning, getGender, detectGender, getName, getRace
     from main import devil, angel
 
     clear()
@@ -31,7 +31,7 @@ def start(checkRace = False, checkGender = False, err = False, data = [], dialog
         if err == True:
             warning("Такого пола нет!")
 
-        gender = input('[м/ж]: ')
+        gender = getGender()
         gender = detectGender(gender)
 
         if gender == 'm' or gender == 'f':

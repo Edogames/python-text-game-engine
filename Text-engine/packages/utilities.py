@@ -7,6 +7,7 @@ from termcolor import cprint, colored
 hr = "\n_____________________________\n"
 br = "\n"
 
+
 # получаем и заменяем html теги
 def getHtmlTags(text):
     text = splitText(text)
@@ -15,10 +16,11 @@ def getHtmlTags(text):
 
     return text
 
+
 # Всякие детекторы
 def detectGender(val):
-    female = ['f', 'F', 'ж', "Ж"]
-    male = ["м", "М", 'm', 'M']
+    female = ['f', 'F', 'ж', "Ж", 'Женщина', 'женщина']
+    male = ["м", "М", 'm', 'M', 'Мужчина', 'мужчина']
 
     if val in female:
         return 'f'
@@ -26,29 +28,50 @@ def detectGender(val):
         return 'm'
     else:
         return False
-def detectChoice(val):
-    yes = ['д', 'Д', 'y', 'Y']
-    no = ['н',  'Н',  'n',  'N']
+    
+def detectChoice(value="", msg=""):
+    yes = ['д', "да", 'y', 'yes']
+    no = ['н', 'нет', 'n', 'no']
 
-    if val in yes:
+    if msg != "":
+        import PySimpleGUI as sg
+
+        layout = [
+            [sg.Text(msg)],
+            [sg.Button("Да"), sg.Button("Нет")],
+        ]
+
+        window = sg.Window('Выбор', layout)
+
+        value, event = window.read()
+
+        value = value[0]
+
+        window.close()
+
+    if value.lower() in yes:
         return 'yes'
-    elif val in no:
+    elif value.lower() in no:
         return 'no'
     else:
         return False
+    
 def checkChoice(val):
     if val == '0' or val == '':
         return None
     else:
         return val
 
+
 # Очистка консоли
 def clear():
     return os.system('cls' if os.name=='nt' else 'clear')
 
+
 # Пустой инпут
 def pressEnter():
     return input("Нажмите Enter что бы продолжить...")
+
 
 # Разделитель текста по лимиту
 def splitText(text: str):
@@ -66,6 +89,7 @@ def splitText(text: str):
 
     return newText
 
+
 # Типы уведомлений
 def warning(text: str, anim: bool = True):
     text = splitText(text)
@@ -78,6 +102,7 @@ def warning(text: str, anim: bool = True):
         return
     else:
         return cprint(text, 'red')
+    
 def header(text: str, anim: bool = True):
     text = splitText(text)
     if anim == True:
@@ -89,6 +114,7 @@ def header(text: str, anim: bool = True):
         return
     else:
         return cprint(text, 'yellow')
+    
 def success(text: str, anim: bool = True):
     text = splitText(text)
     if anim == True:
@@ -100,26 +126,81 @@ def success(text: str, anim: bool = True):
     else:
         return cprint(text, 'green')
 
+
 # Получение данных
 def getName():
-    print("(Не вводя имя, вы дадите имя персонажу то же что и системе)")
-    value = input("Введите ваше имя: ")
+    import PySimpleGUI as sg
+    print("Ждём ввода имени...")
+
+    layout = [
+        [sg.Text("(Не вводя имя, вы дадите имя персонажу то же что и системе)")],
+        [sg.Text('Имя игрока'), sg.InputText()],
+        [sg.Submit()]
+    ]
+
+    window = sg.Window('Имя', layout)
+
+    event, values = window.read()
+
+    window.close()
+
+    value = values[0]
+
     if value == "":
         value = os.getlogin()
     return value
 
-def getRace():
-    value = input("Введите ваш рассу: ")
+def getGender():
+    import PySimpleGUI as sg
+    print("Ждём ввода пола...")
+
+    layout = [
+        [sg.Text("Выберите пол персонажа.")],
+        [sg.Button("Мужчина"), sg.Button("Женщина")]
+    ]
+
+    window = sg.Window('Пол', layout)
+
+    value, event = window.read()
+
+    window.close()
+
     return value
 
+def getRace():
+    # ToDo: Поменять на пресеты
+    import PySimpleGUI as sg
+    print("Ждём ввода рассы...")
+
+    layout = [
+        [sg.Text("(Расса не может быть пустой)")],
+        [sg.Text("Введите вашу рассу: "), sg.InputText()],
+        [sg.Submit()]
+    ]
+
+    window = sg.Window('Расса', layout)
+
+    event, value = window.read()
+
+    window.close()
+
+    return value[0]
+
+
 # Идти в
-def goto(locName, locations = []):
+def goto(locName="", locDisplayName="", locations = []):
     if locations == []:
         from main import locs
         locations = locs
 
     for i in locations:
-        if i.name == locName:
+        if locName != "" and i.name == locName:
+            from main import player
+            newLoc = i
+            header("Ждите...")
+            time.sleep(0.5)
+            return newLoc.start(locations, player, '0', False, False)
+        if locDisplayName != "" and i.displayName == locDisplayName:
             from main import player
             newLoc = i
             header("Ждите...")

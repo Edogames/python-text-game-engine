@@ -149,7 +149,7 @@ class NPC:
                 return self.endConversation(placeName)
 
     def endConversation(self, placeName):
-        return goto(placeName)
+        return goto(locName=placeName)
 
     def conversationWithStranger(self, player, placeName):
         self.addRelationship(player, 'знакомая' if player.gender == 'f' else 'знакомый')
@@ -177,10 +177,10 @@ class NPC:
         if detectChoice(choice) == 'yes':
             self.checkRelationship(player, placeName)
             pressEnter()
-            return goto(placeName, [])
+            return goto(locName=placeName, locations=[])
         elif detectChoice(choice) == 'no':
             self.say('Ну, видимо у тебя много дел, чтож, не буду мешать.')
             pressEnter()
-            return goto(placeName, [])
+            return goto(locName=placeName, locations=[])
         else:
             return self.meet(player, placeName, True)
