@@ -5,7 +5,7 @@ This is my test area.
 GUI elements added! Soon will be fully GUI, but still with text, no image<br>
 Soon will be error checking hardcoded inside code so no errors will appear
 
-<hr>
+<br>
 
 ru
 Это моя тестовая площадка.
